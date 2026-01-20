@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 1 - Core Attributes (GAS Foundation) COMPLETE. Ready for Phase 2.
+**Current Focus:** Phase 2 - Sanity & Perception - Plan 01 complete. SanityPerceptionComponent ready for GAS effects.
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -16,14 +16,14 @@
 
 ## Current Position
 
-**Phase:** 1 of 10 (Core Attributes) - COMPLETE
-**Plan:** 3 of 3 complete
-**Status:** Phase complete
+**Phase:** 2 of 10 (Sanity & Perception)
+**Plan:** 1 of 3 complete
+**Status:** In progress
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
-Phase 2  [ ] Sanity & Perception
+Phase 2  [#..] Sanity & Perception - Plan 01 complete
 Phase 3  [ ] Flashlight & Light System
 Phase 4  [ ] Consumables & Inventory
 Phase 5  [ ] Investigation System
@@ -33,7 +33,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [###.......] 3/~30 plans complete (~10%)
+Overall: [####......] 4/~30 plans complete (~13%)
 ```
 
 ---
@@ -43,7 +43,7 @@ Overall: [###.......] 3/~30 plans complete (~10%)
 | Metric | Value |
 |--------|-------|
 | Phases Complete | 1/10 |
-| Plans Executed | 3 |
+| Plans Executed | 4 |
 | Last Plan Duration | 12 min |
 | Blockers Encountered | 0 |
 
@@ -65,6 +65,11 @@ Overall: [###.......] 3/~30 plans complete (~10%)
 | Timer-based stamina replaced with GAS | Unified approach using Gameplay Effects for all attribute changes | 2026-01-20 |
 | PlayerController as UI host | Clean separation - Character handles gameplay, Controller handles UI and GAS bindings | 2026-01-20 |
 | BlueprintImplementableEvent for UI | C++ provides interface, Blueprint implements visuals and animations | 2026-01-20 |
+| Multi-level sanity tags (50%, 30%, 20%) | Enables perception effects at 50%, hallucinations at 30%, audio muffling at 20% | 2026-01-20 |
+| 5% sanity floor | Player can never reach 0 sanity; potential future difficulty option | 2026-01-20 |
+| 80% sanity regen cap via GetSanityRegenCapValue() | Light regen capped; medication can restore past 80% | 2026-01-20 |
+| Timer-based light detection (0.1s interval) | More performant than Tick; sufficient for gameplay feel | 2026-01-20 |
+| Actor tags for light filtering | FlickeringLight excludes, ProtectiveLight includes non-light actors | 2026-01-20 |
 
 ### Technical Notes
 
@@ -77,8 +82,10 @@ Overall: [###.......] 3/~30 plans complete (~10%)
 - **PlayerState integration:** SerenePlayerState owns ASC and AttributeSet
 - **Character integration:** HorrorCharacter accesses GAS via PlayerState, stamina uses Gameplay Effects
 - **UI integration:** HorrorPlayerController binds GAS delegates, HorrorUI receives percentage-based updates
+- **Sanity perception:** SanityPerceptionComponent attached to HorrorCharacter, manages light detection and GAS effects
+- **Sanity tags:** State.Sanity50, State.Sanity30, State.Sanity20 for multi-level perception effects
 
-### Patterns Established (Phase 1)
+### Patterns Established (Phase 1 + Phase 2)
 
 - ASC on PlayerState, Character as Avatar (IAbilitySystemInterface forwarding)
 - PossessedBy is initialization point for GAS on player characters
@@ -87,6 +94,10 @@ Overall: [###.......] 3/~30 plans complete (~10%)
 - BlueprintImplementableEvent pattern for UI customization
 - State tags under State.* namespace for gameplay conditions
 - ATTRIBUTE_ACCESSORS macro for standardized attribute access
+- **Multi-threshold tag management:** UpdateSanityThresholdTags pattern in AttributeSet
+- **ActorComponent for modular systems:** SanityPerceptionComponent pattern
+- **Light caching with TWeakObjectPtr:** Safe actor references that auto-clean
+- **Grace period state machine:** bInLight + bInGracePeriod + timer callbacks
 
 ### Research Flags
 
@@ -101,16 +112,17 @@ Overall: [###.......] 3/~30 plans complete (~10%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-20: Completed 01-03-PLAN.md (HUD GAS Integration)
-- Extended HorrorUI with Update*Bar methods for all 4 attributes
-- Bound GAS attribute delegates in HorrorPlayerController
-- User verified stamina system works end-to-end in PIE
-- **Phase 1 complete**
+- 2026-01-20: Completed 02-01-PLAN.md (Sanity Core Foundation)
+- Added State_Sanity50, State_Sanity30, State_Sanity20 threshold tags
+- Created SanityPerceptionComponent with light detection and GAS effect management
+- Attached component to HorrorCharacter
+- **Plan 02-01 complete**
 
 ### Next Session
-- Begin Phase 2 (Sanity & Perception) planning
-- Create 02-CONTEXT.md with user discussion
-- Sanity attribute already exists, ready for perception effects
+- Execute Plan 02-02 (Blueprint Gameplay Effects for sanity drain/regen)
+- Create GE_SanityDrain and GE_SanityRegen in Editor
+- Configure component with effect classes
+- Runtime test light-based sanity system
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -120,8 +132,14 @@ Overall: [###.......] 3/~30 plans complete (~10%)
 - [x] Integrate HorrorCharacter with GAS stamina (01-02)
 - [x] Wire HUD to GAS attributes (01-03)
 - [x] Runtime test stamina system (verified)
-- [ ] Create Blueprint Gameplay Effects in Editor (optional tuning)
-- [ ] Create BP_SerenePlayerState (optional - C++ class works)
+- [x] Create SanityPerceptionComponent (02-01)
+- [x] Add multi-level sanity threshold tags (02-01)
+- [ ] Create GE_SanityDrain Blueprint (02-02)
+- [ ] Create GE_SanityRegen Blueprint with 80% cap (02-02)
+- [ ] Configure SanityPerceptionComponent with effects (02-02)
+- [ ] Runtime test sanity drain/regen system
+- [ ] Create post-process effects for sanity (02-03)
+- [ ] Create audio distortion for sanity (02-03)
 
 ---
 
