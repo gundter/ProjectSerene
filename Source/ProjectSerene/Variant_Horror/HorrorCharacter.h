@@ -4,76 +4,100 @@
 
 #include "CoreMinimal.h"
 #include "ProjectSereneCharacter.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "HorrorCharacter.generated.h"
 
 class USpotLightComponent;
 class UInputAction;
+class UGameplayEffect;
+class UAbilitySystemComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUpdateSprintMeterDelegate, float, Percentage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSprintStateChangedDelegate, bool, bSprinting);
 
 /**
- *  Simple first person horror character
- *  Provides stamina-based sprinting
+ *  First person horror character with GAS-based stamina system
+ *
+ *  Accesses the Ability System Component through SerenePlayerState.
+ *  Stamina drain and regeneration are handled via Gameplay Effects instead of timers.
+ *  Existing UI delegates (OnSprintMeterUpdated, OnSprintStateChanged) are preserved for compatibility.
  */
 UCLASS(abstract)
-class PROJECTSERENE_API AHorrorCharacter : public AProjectSereneCharacter
+class PROJECTSERENE_API AHorrorCharacter : public AProjectSereneCharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 	/** Player light source */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	USpotLightComponent* SpotLight;
-	
+
 protected:
 
-	/** Fire weapon input action */
+	/** Sprint input action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* SprintAction;
 
-	/** If true, we're sprinting */
+	/** If true, we're sprinting (input held down) */
 	bool bSprinting = false;
 
-	/** If true, we're recovering stamina */
+	/** If true, we're recovering stamina (must reach 20% before sprinting allowed) */
 	bool bRecovering = false;
 
 	/** Default walk speed when not sprinting or recovering */
 	UPROPERTY(EditAnywhere, Category="Walk")
 	float WalkSpeed = 250.0f;
 
-	/** Time interval for sprinting stamina ticks */
-	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0, ClampMax = 1, Units = "s"))
-	float SprintFixedTickTime = 0.03333f;
-
-	/** Sprint stamina amount. Maxes at SprintTime */
-	float SprintMeter = 0.0f;
-
-	/** How long we can sprint for, in seconds */
-	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
-	float SprintTime = 3.0f;
-
 	/** Walk speed while sprinting */
-	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0, ClampMax = 10, Units = "cm/s"))
+	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0, Units = "cm/s"))
 	float SprintSpeed = 600.0f;
 
 	/** Walk speed while recovering stamina */
-	UPROPERTY(EditAnywhere, Category="Recovery", meta = (ClampMin = 0, ClampMax = 10, Units = "cm/s"))
+	UPROPERTY(EditAnywhere, Category="Recovery", meta = (ClampMin = 0, Units = "cm/s"))
 	float RecoveringWalkSpeed = 150.0f;
 
-	/** Time it takes for the sprint meter to recover */
-	UPROPERTY(EditAnywhere, Category="Recovery", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
-	float RecoveryTime = 0.0f;
+	// ----------------------------------------
+	// GAS Stamina System
+	// ----------------------------------------
 
-	/** Sprint tick timer */
-	FTimerHandle SprintTimer;
+	/** Gameplay Effect that drains stamina while sprinting (Infinite with Period) */
+	UPROPERTY(EditDefaultsOnly, Category = "GAS|Stamina")
+	TSubclassOf<UGameplayEffect> StaminaDrainEffect;
+
+	/** Gameplay Effect that regenerates stamina when not sprinting (Infinite with Period) */
+	UPROPERTY(EditDefaultsOnly, Category = "GAS|Stamina")
+	TSubclassOf<UGameplayEffect> StaminaRegenEffect;
+
+	/** Active handle for the stamina drain effect (to remove when sprint stops) */
+	FActiveGameplayEffectHandle ActiveDrainHandle;
+
+	/** Active handle for the stamina regen effect (to remove when sprint starts) */
+	FActiveGameplayEffectHandle ActiveRegenHandle;
+
+	/** Timer handle for delayed stamina regen start after sprint ends */
+	FTimerHandle RegenDelayTimer;
+
+	/** Delay before stamina regeneration starts after sprinting stops (seconds) */
+	UPROPERTY(EditDefaultsOnly, Category = "GAS|Stamina", meta = (ClampMin = 0, ClampMax = 5))
+	float StaminaRegenDelay = 2.0f;
 
 public:
 
-	/** Delegate called when the sprint meter should be updated */
+	/** Delegate called when the sprint meter should be updated (0.0 to 1.0) */
 	FUpdateSprintMeterDelegate OnSprintMeterUpdated;
 
 	/** Delegate called when we start and stop sprinting */
 	FSprintStateChangedDelegate OnSprintStateChanged;
+
+	// ----------------------------------------
+	// IAbilitySystemInterface
+	// ----------------------------------------
+
+	/**
+	 * Returns the AbilitySystemComponent from PlayerState.
+	 * Character does not own ASC directly - it forwards to SerenePlayerState.
+	 */
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
 
@@ -86,19 +110,38 @@ protected:
 	/** Gameplay cleanup */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 
+	/** Called when this Character is possessed by a Controller */
+	virtual void PossessedBy(AController* NewController) override;
+
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 
 protected:
 
-	/** Starts sprinting behavior */
-	UFUNCTION(BlueprintCallable, Category = "Input")
+	/** Starts sprinting behavior - applies stamina drain effect */
+	UFUNCTION(BlueprintCallable, Category = "Sprint")
 	void DoStartSprint();
 
-	/** Stops sprinting behavior */
-	UFUNCTION(BlueprintCallable, Category="Input")
+	/** Stops sprinting behavior - removes drain, starts regen after delay */
+	UFUNCTION(BlueprintCallable, Category = "Sprint")
 	void DoEndSprint();
 
-	/** Called while sprinting at a fixed time interval */
-	void SprintFixedTick();
+	// ----------------------------------------
+	// GAS Helpers
+	// ----------------------------------------
+
+	/** Called when Stamina attribute changes - updates UI and handles recovery */
+	void OnStaminaChanged(const FOnAttributeChangeData& Data);
+
+	/** Starts the stamina regeneration effect */
+	void StartStaminaRegen();
+
+	/** Stops the stamina regeneration effect */
+	void StopStaminaRegen();
+
+	/** Applies the stamina drain effect */
+	void ApplyStaminaDrain();
+
+	/** Removes the stamina drain effect */
+	void RemoveStaminaDrain();
 };

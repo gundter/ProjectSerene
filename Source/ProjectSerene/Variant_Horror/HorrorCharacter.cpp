@@ -1,6 +1,5 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
 #include "Variant_Horror/HorrorCharacter.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -9,6 +8,14 @@
 #include "Components/SpotLightComponent.h"
 #include "EnhancedInputComponent.h"
 #include "InputAction.h"
+
+// GAS includes
+#include "AbilitySystemComponent.h"
+#include "Player/SerenePlayerState.h"
+#include "GAS/SereneAbilitySystemComponent.h"
+#include "GAS/SereneAttributeSet.h"
+#include "GAS/SereneGameplayTags.h"
+#include "GameplayEffect.h"
 
 AHorrorCharacter::AHorrorCharacter()
 {
@@ -28,116 +35,307 @@ void AHorrorCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// initialize sprint meter to max
-	SprintMeter = SprintTime;
-
 	// Initialize the walk speed
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 
-	// start the sprint tick timer
-	GetWorld()->GetTimerManager().SetTimer(SprintTimer, this, &AHorrorCharacter::SprintFixedTick, SprintFixedTickTime, true);
+	// Note: GAS initialization happens in PossessedBy, not BeginPlay,
+	// because PlayerState is not yet valid in BeginPlay
 }
 
 void AHorrorCharacter::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	// clear the sprint timer
-	GetWorld()->GetTimerManager().ClearTimer(SprintTimer);
+	// Clear the regen delay timer
+	GetWorld()->GetTimerManager().ClearTimer(RegenDelayTimer);
+
+	// Remove any active gameplay effects
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		if (ActiveDrainHandle.IsValid())
+		{
+			ASC->RemoveActiveGameplayEffect(ActiveDrainHandle);
+		}
+		if (ActiveRegenHandle.IsValid())
+		{
+			ASC->RemoveActiveGameplayEffect(ActiveRegenHandle);
+		}
+	}
+}
+
+void AHorrorCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// Get the PlayerState and initialize GAS
+	if (ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>())
+	{
+		UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+		if (ASC)
+		{
+			// Initialize ASC with PlayerState as Owner, Character as Avatar
+			ASC->InitAbilityActorInfo(PS, this);
+
+			// Initialize attributes to default values (Health=100, Stamina=100, etc.)
+			PS->InitializeAttributes();
+
+			// Bind attribute change delegate for stamina to update UI and handle recovery
+			ASC->GetGameplayAttributeValueChangeDelegate(
+				USereneAttributeSet::GetStaminaAttribute())
+				.AddUObject(this, &AHorrorCharacter::OnStaminaChanged);
+
+			// Start stamina regen (will be blocked by sprinting tag when sprint starts)
+			StartStaminaRegen();
+
+			UE_LOG(LogTemp, Log, TEXT("HorrorCharacter: GAS initialized, stamina regen started"));
+		}
+	}
+}
+
+UAbilitySystemComponent* AHorrorCharacter::GetAbilitySystemComponent() const
+{
+	// Forward to PlayerState's ASC
+	if (ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>())
+	{
+		return PS->GetAbilitySystemComponent();
+	}
+	return nullptr;
 }
 
 void AHorrorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	// Set up action bindings
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Set up action bindings
-		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-		{
-			// Sprinting
-			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AHorrorCharacter::DoStartSprint);
-			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AHorrorCharacter::DoEndSprint);
+		// Sprinting
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AHorrorCharacter::DoStartSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AHorrorCharacter::DoEndSprint);
+	}
+}
 
+void AHorrorCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
+{
+	// Get PlayerState for attribute access
+	ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>();
+	if (!PS)
+	{
+		return;
+	}
+
+	USereneAttributeSet* AttributeSet = PS->GetAttributeSet();
+	if (!AttributeSet)
+	{
+		return;
+	}
+
+	// Calculate stamina percentage for UI
+	const float MaxStamina = AttributeSet->GetMaxStamina();
+	const float Percent = MaxStamina > 0.0f ? Data.NewValue / MaxStamina : 0.0f;
+
+	// Broadcast to UI (preserves existing delegate for Blueprint HUD compatibility)
+	OnSprintMeterUpdated.Broadcast(Percent);
+
+	// Handle recovery threshold: can't sprint again until 20% stamina
+	if (bRecovering && Data.NewValue >= MaxStamina * 0.2f)
+	{
+		bRecovering = false;
+
+		// Restore normal walk speed if not trying to sprint
+		if (!bSprinting)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 		}
+
+		UE_LOG(LogTemp, Log, TEXT("HorrorCharacter: Recovery complete, sprinting allowed"));
+	}
+
+	// Force stop sprint if stamina depleted
+	if (Data.NewValue <= 0.0f && bSprinting)
+	{
+		DoEndSprint();
+		bRecovering = true;
+
+		// Set recovering walk speed
+		GetCharacterMovement()->MaxWalkSpeed = RecoveringWalkSpeed;
+
+		UE_LOG(LogTemp, Log, TEXT("HorrorCharacter: Stamina depleted, entering recovery mode"));
 	}
 }
 
 void AHorrorCharacter::DoStartSprint()
 {
-	// set the sprinting flag
-	bSprinting = true;
-
-	// are we out of recovery mode?
-	if (!bRecovering)
+	// Can't sprint if recovering
+	if (bRecovering)
 	{
-		// set the sprint walk speed
-		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
-
-		// call the sprint state changed delegate
-		OnSprintStateChanged.Broadcast(true);
+		return;
 	}
 
+	// Check if we have stamina via GAS
+	if (ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>())
+	{
+		USereneAttributeSet* AttributeSet = PS->GetAttributeSet();
+		if (AttributeSet && AttributeSet->GetStamina() <= 0.0f)
+		{
+			return;
+		}
+	}
+
+	// Set the sprinting flag
+	bSprinting = true;
+
+	// Cancel any pending regen delay
+	GetWorld()->GetTimerManager().ClearTimer(RegenDelayTimer);
+
+	// Stop regen and start drain
+	StopStaminaRegen();
+	ApplyStaminaDrain();
+
+	// Set the sprint walk speed
+	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+
+	// Add State.Sprinting tag to ASC
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sprinting);
+	}
+
+	// Broadcast sprint state changed for UI
+	OnSprintStateChanged.Broadcast(true);
+
+	UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Sprint started"));
 }
 
 void AHorrorCharacter::DoEndSprint()
 {
-	// set the sprinting flag
+	// Prevent double-calls
+	if (!bSprinting)
+	{
+		return;
+	}
+
+	// Clear the sprinting flag
 	bSprinting = false;
 
-	// are we out of recovery mode?
-	if (!bRecovering)
-	{
-		// set the default walk speed
-		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	// Remove drain effect
+	RemoveStaminaDrain();
 
-		// call the sprint state changed delegate
-		OnSprintStateChanged.Broadcast(false);
+	// Remove State.Sprinting tag from ASC
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sprinting);
+	}
+
+	// Set walk speed (either normal or recovering)
+	if (bRecovering)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = RecoveringWalkSpeed;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	}
+
+	// Start regen after grace period delay
+	GetWorld()->GetTimerManager().SetTimer(
+		RegenDelayTimer,
+		this,
+		&AHorrorCharacter::StartStaminaRegen,
+		StaminaRegenDelay,
+		false
+	);
+
+	// Broadcast sprint state changed for UI
+	OnSprintStateChanged.Broadcast(false);
+
+	UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Sprint ended, regen starting in %.1f seconds"), StaminaRegenDelay);
+}
+
+void AHorrorCharacter::StartStaminaRegen()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || !StaminaRegenEffect)
+	{
+		return;
+	}
+
+	// Don't start regen if we're currently sprinting
+	if (bSprinting)
+	{
+		return;
+	}
+
+	// Don't double-apply if already active
+	if (ActiveRegenHandle.IsValid())
+	{
+		return;
+	}
+
+	// Apply the regen effect
+	FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaRegenEffect, 1, ContextHandle);
+	if (SpecHandle.IsValid())
+	{
+		ActiveRegenHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina regen effect applied"));
 	}
 }
 
-void AHorrorCharacter::SprintFixedTick()
+void AHorrorCharacter::StopStaminaRegen()
 {
-	// are we out of recovery, still have stamina and are moving faster than our walk speed?
-	if (bSprinting && !bRecovering && GetVelocity().Length() > WalkSpeed)
+	if (!ActiveRegenHandle.IsValid())
 	{
-
-		// do we still have meter to burn?
-		if (SprintMeter > 0.0f)
-		{
-			// update the sprint meter
-			SprintMeter = FMath::Max(SprintMeter - SprintFixedTickTime, 0.0f);
-
-			// have we run out of stamina?
-			if (SprintMeter <= 0.0f)
-			{
-				// raise the recovering flag
-				bRecovering = true;
-
-				// set the recovering walk speed
-				GetCharacterMovement()->MaxWalkSpeed = RecoveringWalkSpeed;
-			}
-		}
-		
-	} else {
-
-		// recover stamina
-		SprintMeter = FMath::Min(SprintMeter + SprintFixedTickTime, SprintTime);
-
-		if (SprintMeter >= SprintTime)
-		{
-			// lower the recovering flag
-			bRecovering = false;
-
-			// set the walk or sprint speed depending on whether the sprint button is down
-			GetCharacterMovement()->MaxWalkSpeed = bSprinting ? SprintSpeed : WalkSpeed;
-
-			// update the sprint state depending on whether the button is down or not
-			OnSprintStateChanged.Broadcast(bSprinting);
-		}
-
+		return;
 	}
 
-	// broadcast the sprint meter updated delegate
-	OnSprintMeterUpdated.Broadcast(SprintMeter / SprintTime);
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		ASC->RemoveActiveGameplayEffect(ActiveRegenHandle);
+		ActiveRegenHandle.Invalidate();
+		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina regen effect removed"));
+	}
+}
 
+void AHorrorCharacter::ApplyStaminaDrain()
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC || !StaminaDrainEffect)
+	{
+		return;
+	}
+
+	// Don't double-apply if already active
+	if (ActiveDrainHandle.IsValid())
+	{
+		return;
+	}
+
+	// Apply the drain effect
+	FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(StaminaDrainEffect, 1, ContextHandle);
+	if (SpecHandle.IsValid())
+	{
+		ActiveDrainHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina drain effect applied"));
+	}
+}
+
+void AHorrorCharacter::RemoveStaminaDrain()
+{
+	if (!ActiveDrainHandle.IsValid())
+	{
+		return;
+	}
+
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		ASC->RemoveActiveGameplayEffect(ActiveDrainHandle);
+		ActiveDrainHandle.Invalidate();
+		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina drain effect removed"));
+	}
 }
