@@ -47,6 +47,13 @@ Plans:
 
 **Dependencies:** Phase 1 (Sanity attribute must exist)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Core sanity mechanics: threshold tags, AttributeSet updates, SanityPerceptionComponent with light detection
+- [ ] 02-02-PLAN.md — Gameplay Effects for drain/regen, visual distortion via post-process
+- [ ] 02-03-PLAN.md — Audio distortion, HUD warning icon, end-to-end verification
+
 **Requirements:**
 - SANI-01: Darkness exposure decreases sanity over time (via Gameplay Effect)
 - SANI-02: Light exposure slowly restores sanity (capped at threshold, not full)
@@ -264,7 +271,7 @@ Plans:
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 1 | Core Attributes (GAS Foundation) | 6 | Complete |
-| 2 | Sanity & Perception | 5 | Pending |
+| 2 | Sanity & Perception | 5 | Planned |
 | 3 | Flashlight & Light System | 5 | Pending |
 | 4 | Consumables & Inventory | 8 | Pending |
 | 5 | Investigation System | 8 | Pending |
@@ -307,3 +314,4 @@ Phase 1 (GAS Foundation)
 *Roadmap created: 2026-01-19*
 *Coverage: 62/62 v1 requirements mapped*
 *Phase 1 planned: 2026-01-20*
+*Phase 2 planned: 2026-01-20*
