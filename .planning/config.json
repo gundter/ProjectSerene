@@ -2,5 +2,11 @@
   "mode": "yolo",
   "depth": "comprehensive",
   "parallelization": true,
-  "commit_docs": true
+  "commit_docs": true,
+  "branching": {
+    "strategy": "feature-branch-per-phase",
+    "pattern": "phase-{n}/{short-name}",
+    "merge_via": "pr",
+    "main_branch": "master"
+  }
 }
