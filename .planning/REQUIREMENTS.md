@@ -1,7 +1,7 @@
 # Requirements: Project Serene
 
 **Defined:** 2026-01-19
-**Core Value:** The player experiences unreliable perception — they can never fully trust what they see, creating genuine paranoia and tension.
+**Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
 ## v1 Requirements (Demo)
 
@@ -163,83 +163,83 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ATTR-01 | TBD | Pending |
-| ATTR-02 | TBD | Pending |
-| ATTR-03 | TBD | Pending |
-| ATTR-04 | TBD | Pending |
-| ATTR-05 | TBD | Pending |
-| ATTR-06 | TBD | Pending |
-| SANI-01 | TBD | Pending |
-| SANI-02 | TBD | Pending |
-| SANI-03 | TBD | Pending |
-| SANI-04 | TBD | Pending |
-| SANI-05 | TBD | Pending |
-| LITE-01 | TBD | Pending |
-| LITE-02 | TBD | Pending |
-| LITE-03 | TBD | Pending |
-| LITE-04 | TBD | Pending |
-| LITE-05 | TBD | Pending |
-| CONS-01 | TBD | Pending |
-| CONS-02 | TBD | Pending |
-| CONS-03 | TBD | Pending |
-| CONS-04 | TBD | Pending |
-| CONS-05 | TBD | Pending |
-| CONS-06 | TBD | Pending |
-| CONS-07 | TBD | Pending |
-| CONS-08 | TBD | Pending |
-| HALL-01 | TBD | Pending |
-| HALL-02 | TBD | Pending |
-| HALL-03 | TBD | Pending |
-| HALL-04 | TBD | Pending |
-| HALL-05 | TBD | Pending |
-| HALL-06 | TBD | Pending |
-| HALL-07 | TBD | Pending |
-| INVS-01 | TBD | Pending |
-| INVS-02 | TBD | Pending |
-| INVS-03 | TBD | Pending |
-| INVS-04 | TBD | Pending |
-| INVS-05 | TBD | Pending |
-| INVS-06 | TBD | Pending |
-| INVS-07 | TBD | Pending |
-| INVS-08 | TBD | Pending |
-| MELE-01 | TBD | Pending |
-| MELE-02 | TBD | Pending |
-| MELE-03 | TBD | Pending |
-| MELE-04 | TBD | Pending |
-| PSTL-01 | TBD | Pending |
-| PSTL-02 | TBD | Pending |
-| PSTL-03 | TBD | Pending |
-| PSTL-04 | TBD | Pending |
-| PSTL-05 | TBD | Pending |
-| PSTL-06 | TBD | Pending |
-| PSTL-07 | TBD | Pending |
-| ENEM-01 | TBD | Pending |
-| ENEM-02 | TBD | Pending |
-| ENEM-03 | TBD | Pending |
-| ENEM-04 | TBD | Pending |
-| ENEM-05 | TBD | Pending |
-| ENEM-06 | TBD | Pending |
-| ENEM-07 | TBD | Pending |
-| ENEM-08 | TBD | Pending |
-| NARR-01 | TBD | Pending |
-| NARR-02 | TBD | Pending |
-| NARR-03 | TBD | Pending |
-| NARR-04 | TBD | Pending |
-| NARR-05 | TBD | Pending |
-| NARR-06 | TBD | Pending |
-| NARR-07 | TBD | Pending |
-| NARR-08 | TBD | Pending |
-| ENVR-01 | TBD | Pending |
-| ENVR-02 | TBD | Pending |
-| ENVR-03 | TBD | Pending |
-| ENVR-04 | TBD | Pending |
-| ENVR-05 | TBD | Pending |
+| ATTR-01 | Phase 1 | Pending |
+| ATTR-02 | Phase 1 | Pending |
+| ATTR-03 | Phase 1 | Pending |
+| ATTR-04 | Phase 1 | Pending |
+| ATTR-05 | Phase 1 | Pending |
+| ATTR-06 | Phase 1 | Pending |
+| SANI-01 | Phase 2 | Pending |
+| SANI-02 | Phase 2 | Pending |
+| SANI-03 | Phase 2 | Pending |
+| SANI-04 | Phase 2 | Pending |
+| SANI-05 | Phase 2 | Pending |
+| LITE-01 | Phase 3 | Pending |
+| LITE-02 | Phase 3 | Pending |
+| LITE-03 | Phase 3 | Pending |
+| LITE-04 | Phase 3 | Pending |
+| LITE-05 | Phase 3 | Pending |
+| CONS-01 | Phase 4 | Pending |
+| CONS-02 | Phase 4 | Pending |
+| CONS-03 | Phase 4 | Pending |
+| CONS-04 | Phase 4 | Pending |
+| CONS-05 | Phase 4 | Pending |
+| CONS-06 | Phase 4 | Pending |
+| CONS-07 | Phase 4 | Pending |
+| CONS-08 | Phase 4 | Pending |
+| INVS-01 | Phase 5 | Pending |
+| INVS-02 | Phase 5 | Pending |
+| INVS-03 | Phase 5 | Pending |
+| INVS-04 | Phase 5 | Pending |
+| INVS-05 | Phase 5 | Pending |
+| INVS-06 | Phase 5 | Pending |
+| INVS-07 | Phase 5 | Pending |
+| INVS-08 | Phase 5 | Pending |
+| HALL-01 | Phase 6 | Pending |
+| HALL-02 | Phase 6 | Pending |
+| HALL-03 | Phase 6 | Pending |
+| HALL-04 | Phase 6 | Pending |
+| HALL-05 | Phase 6 | Pending |
+| HALL-06 | Phase 6 | Pending |
+| HALL-07 | Phase 6 | Pending |
+| ENEM-01 | Phase 7 | Pending |
+| ENEM-02 | Phase 7 | Pending |
+| ENEM-03 | Phase 7 | Pending |
+| ENEM-04 | Phase 7 | Pending |
+| ENEM-05 | Phase 7 | Pending |
+| ENEM-06 | Phase 7 | Pending |
+| ENEM-07 | Phase 7 | Pending |
+| ENEM-08 | Phase 7 | Pending |
+| MELE-01 | Phase 8 | Pending |
+| MELE-02 | Phase 8 | Pending |
+| MELE-03 | Phase 8 | Pending |
+| MELE-04 | Phase 8 | Pending |
+| PSTL-01 | Phase 8 | Pending |
+| PSTL-02 | Phase 8 | Pending |
+| PSTL-03 | Phase 8 | Pending |
+| PSTL-04 | Phase 8 | Pending |
+| PSTL-05 | Phase 8 | Pending |
+| PSTL-06 | Phase 8 | Pending |
+| PSTL-07 | Phase 8 | Pending |
+| NARR-01 | Phase 9 | Pending |
+| NARR-02 | Phase 9 | Pending |
+| NARR-03 | Phase 9 | Pending |
+| NARR-04 | Phase 9 | Pending |
+| NARR-05 | Phase 9 | Pending |
+| NARR-06 | Phase 9 | Pending |
+| NARR-07 | Phase 9 | Pending |
+| NARR-08 | Phase 9 | Pending |
+| ENVR-01 | Phase 10 | Pending |
+| ENVR-02 | Phase 10 | Pending |
+| ENVR-03 | Phase 10 | Pending |
+| ENVR-04 | Phase 10 | Pending |
+| ENVR-05 | Phase 10 | Pending |
 
 **Coverage:**
 - v1 requirements: 62 total
-- Mapped to phases: 0
-- Unmapped: 62 (pending roadmap creation)
+- Mapped to phases: 62
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after adjustments (GAS, consumables expansion)*
+*Last updated: 2026-01-19 - Traceability updated with phase mappings*
