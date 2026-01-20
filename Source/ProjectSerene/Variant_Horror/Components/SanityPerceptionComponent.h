@@ -9,6 +9,9 @@
 
 class UGameplayEffect;
 class UAbilitySystemComponent;
+class UCameraComponent;
+class AHorrorCharacter;
+struct FOnAttributeChangeData;
 
 /**
  * USanityPerceptionComponent
@@ -72,6 +75,30 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS|Sanity")
 	TSubclassOf<UGameplayEffect> SanityRegenEffect;
 
+	// ----------------------------------------
+	// Visual Distortion Configuration
+	// ----------------------------------------
+
+	/** Minimum vignette intensity (at 100% sanity) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Visual")
+	float MinVignetteIntensity = 0.2f;
+
+	/** Maximum vignette intensity (at 5% sanity) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Visual")
+	float MaxVignetteIntensity = 0.8f;
+
+	/** Maximum film grain intensity (at 5% sanity, 0 at 100%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Visual")
+	float MaxGrainIntensity = 0.5f;
+
+	/** Maximum chromatic aberration intensity (at 5% sanity, 0 at 100%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Visual")
+	float MaxChromaticAberration = 3.0f;
+
+	/** Minimum color saturation (at 5% sanity, 1.0 at 100%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Visual")
+	float MinColorSaturation = 0.6f;
+
 private:
 	// ----------------------------------------
 	// Cached Light Actors
@@ -111,6 +138,10 @@ private:
 	/** Timer for grace period before drain starts */
 	FTimerHandle GracePeriodTimer;
 
+	/** Cached reference to owning character's camera */
+	UPROPERTY()
+	TWeakObjectPtr<UCameraComponent> CachedCamera;
+
 	// ----------------------------------------
 	// Core Methods
 	// ----------------------------------------
@@ -129,6 +160,25 @@ private:
 
 	/** Called when grace period ends - starts sanity drain */
 	void OnGracePeriodEnded();
+
+	// ----------------------------------------
+	// Visual Distortion Methods
+	// ----------------------------------------
+
+	/** Set up sanity change listener and initialize post-process */
+	void SetupSanityListener();
+
+	/** Called when Sanity attribute changes */
+	void OnSanityChanged(const FOnAttributeChangeData& Data);
+
+	/** Update visual distortion based on sanity percentage (0-1) */
+	void UpdateVisualDistortion(float SanityPercent);
+
+	/** Initialize post-process override flags on camera */
+	void InitializePostProcessSettings();
+
+	/** Check if sanity has reached regen cap and stop regen if so */
+	void CheckRegenCap(float CurrentSanity, float MaxSanity);
 
 	// ----------------------------------------
 	// GAS Effect Management

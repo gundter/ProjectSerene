@@ -10,6 +10,10 @@
 #include "Engine/PointLight.h"
 #include "Engine/SpotLight.h"
 #include "Engine/Light.h"
+#include "Camera/CameraComponent.h"
+#include "GameplayEffectTypes.h"
+#include "GAS/SereneAttributeSet.h"
+#include "Variant_Horror/HorrorCharacter.h"
 
 USanityPerceptionComponent::USanityPerceptionComponent()
 {
@@ -38,6 +42,12 @@ void USanityPerceptionComponent::BeginPlay()
 		UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Started light check timer (%.2fs interval), cached %d lights"),
 			LightCheckInterval, LightActors.Num());
 	}
+
+	// Set up sanity listener for visual effects
+	SetupSanityListener();
+
+	// Initialize post-process settings on the camera
+	InitializePostProcessSettings();
 }
 
 void USanityPerceptionComponent::EndPlay(EEndPlayReason::Type EndPlayReason)
@@ -317,4 +327,123 @@ void USanityPerceptionComponent::RefreshLightCache()
 {
 	CacheLightActors();
 	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Light cache refreshed, %d lights cached"), LightActors.Num());
+}
+
+// ----------------------------------------
+// Visual Distortion Methods
+// ----------------------------------------
+
+void USanityPerceptionComponent::SetupSanityListener()
+{
+	UAbilitySystemComponent* ASC = GetOwnerASC();
+	if (!ASC)
+	{
+		return;
+	}
+
+	ASC->GetGameplayAttributeValueChangeDelegate(
+		USereneAttributeSet::GetSanityAttribute())
+		.AddUObject(this, &USanityPerceptionComponent::OnSanityChanged);
+
+	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity change listener registered"));
+}
+
+void USanityPerceptionComponent::OnSanityChanged(const FOnAttributeChangeData& Data)
+{
+	// Get max sanity for percentage calculation
+	const USereneAttributeSet* AttributeSet = nullptr;
+	if (UAbilitySystemComponent* ASC = GetOwnerASC())
+	{
+		AttributeSet = ASC->GetSet<USereneAttributeSet>();
+	}
+
+	float MaxSanity = AttributeSet ? AttributeSet->GetMaxSanity() : 100.0f;
+	float SanityPercent = MaxSanity > 0.0f ? Data.NewValue / MaxSanity : 0.0f;
+
+	// Update visual effects
+	UpdateVisualDistortion(SanityPercent);
+
+	// Check if we should stop regen (reached 80% cap)
+	CheckRegenCap(Data.NewValue, MaxSanity);
+}
+
+void USanityPerceptionComponent::UpdateVisualDistortion(float SanityPercent)
+{
+	UCameraComponent* Camera = CachedCamera.Get();
+	if (!Camera)
+	{
+		return;
+	}
+
+	// Calculate distortion scale (inverse of sanity - lower sanity = higher effects)
+	// Clamp sanity to minimum 5% for calculation
+	float ClampedSanity = FMath::Clamp(SanityPercent, 0.05f, 1.0f);
+	float DistortionScale = 1.0f - ClampedSanity;
+
+	// Apply effects with linear interpolation
+	Camera->PostProcessSettings.VignetteIntensity =
+		FMath::Lerp(MinVignetteIntensity, MaxVignetteIntensity, DistortionScale);
+
+	Camera->PostProcessSettings.FilmGrainIntensity =
+		FMath::Lerp(0.0f, MaxGrainIntensity, DistortionScale);
+
+	Camera->PostProcessSettings.SceneFringeIntensity =
+		FMath::Lerp(0.0f, MaxChromaticAberration, DistortionScale);
+
+	// Color desaturation (cold/blue tint at low sanity)
+	float Saturation = FMath::Lerp(1.0f, MinColorSaturation, DistortionScale);
+	Camera->PostProcessSettings.ColorSaturation = FVector4(Saturation, Saturation, Saturation, 1.0f);
+
+	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Visual distortion updated - Sanity: %.1f%%, Distortion: %.2f"),
+		SanityPercent * 100.0f, DistortionScale);
+}
+
+void USanityPerceptionComponent::InitializePostProcessSettings()
+{
+	AHorrorCharacter* Character = Cast<AHorrorCharacter>(GetOwner());
+	if (!Character)
+	{
+		return;
+	}
+
+	UCameraComponent* Camera = Character->GetFirstPersonCameraComponent();
+	if (!Camera)
+	{
+		return;
+	}
+
+	// Cache camera reference
+	CachedCamera = Camera;
+
+	// Enable camera post-process
+	Camera->PostProcessBlendWeight = 1.0f;
+
+	// Set all override flags for properties we'll modify
+	Camera->PostProcessSettings.bOverride_VignetteIntensity = true;
+	Camera->PostProcessSettings.bOverride_FilmGrainIntensity = true;
+	Camera->PostProcessSettings.bOverride_SceneFringeIntensity = true;
+	Camera->PostProcessSettings.bOverride_ColorSaturation = true;
+
+	// Initialize to minimal distortion (high sanity)
+	Camera->PostProcessSettings.VignetteIntensity = MinVignetteIntensity;
+	Camera->PostProcessSettings.FilmGrainIntensity = 0.0f;
+	Camera->PostProcessSettings.SceneFringeIntensity = 0.0f;
+	Camera->PostProcessSettings.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Post-process settings initialized"));
+}
+
+void USanityPerceptionComponent::CheckRegenCap(float CurrentSanity, float MaxSanity)
+{
+	// If regen is active and we've reached 80% cap, stop regen
+	if (RegenHandle.IsValid())
+	{
+		float RegenCapValue = MaxSanity * 0.8f; // 80% cap
+		if (CurrentSanity >= RegenCapValue)
+		{
+			StopSanityRegen();
+			UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity reached regen cap (%.1f%%), regen stopped"),
+				(RegenCapValue / MaxSanity) * 100.0f);
+		}
+	}
 }
