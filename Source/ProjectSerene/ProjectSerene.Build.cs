@@ -29,6 +29,7 @@ public class ProjectSerene : ModuleRules
 		PublicIncludePaths.AddRange(new string[] {
 			"ProjectSerene",
 			"ProjectSerene/GAS",
+			"ProjectSerene/Player",
 			"ProjectSerene/Variant_Horror",
 			"ProjectSerene/Variant_Horror/UI",
 			"ProjectSerene/Variant_Shooter",
