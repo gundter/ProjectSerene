@@ -50,6 +50,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Horror|Attributes")
 	void UpdateBatteryBar(float Percent);
 
+	// ----------------------------------------
+	// Sanity Warning
+	// ----------------------------------------
+
+	/** Update sanity warning icon visibility and intensity */
+	UFUNCTION(BlueprintCallable, Category = "Horror|Sanity")
+	void UpdateSanityWarning(float SanityPercent, bool bShowWarning);
+
 	/** Show attribute bar with auto-fade (bar name identifies which bar to show) */
 	UFUNCTION(BlueprintCallable, Category = "Horror|Attributes")
 	void ShowAttributeBar(FName BarName);
@@ -96,6 +104,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Horror|Attributes", meta = (DisplayName = "Sprint State Changed"))
 	void BP_SprintStateChanged(bool bSprinting);
 
+	/** Called when sanity warning state changes (implement in Blueprint for icon animation) */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Horror|Sanity", meta = (DisplayName = "Sanity Warning Updated"))
+	void BP_SanityWarningUpdated(float SanityPercent, bool bShowWarning);
+
 	// ----------------------------------------
 	// Configuration
 	// ----------------------------------------
@@ -103,4 +115,8 @@ protected:
 	/** How long bars stay visible before fading (managed in Blueprint) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Horror|Attributes")
 	float BarDisplayDuration = 3.0f;
+
+	/** Sanity threshold below which warning icon appears (30%) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Horror|Sanity")
+	float SanityWarningThreshold = 0.3f;
 };

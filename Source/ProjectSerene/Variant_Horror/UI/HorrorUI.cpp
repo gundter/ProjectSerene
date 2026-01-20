@@ -47,6 +47,12 @@ void UHorrorUI::ShowAttributeBar(FName BarName)
 	BP_ShowAttributeBar(BarName);
 }
 
+void UHorrorUI::UpdateSanityWarning(float SanityPercent, bool bShowWarning)
+{
+	// Forward to Blueprint for actual icon display and animation
+	BP_SanityWarningUpdated(SanityPercent, bShowWarning);
+}
+
 // ----------------------------------------
 // Legacy Sprint Callbacks
 // ----------------------------------------

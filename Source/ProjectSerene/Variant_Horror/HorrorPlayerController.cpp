@@ -188,6 +188,10 @@ void AHorrorPlayerController::OnSanityChanged(const FOnAttributeChangeData& Data
 	float Percent = MaxSanity > 0.0f ? Data.NewValue / MaxSanity : 0.0f;
 
 	HorrorUI->UpdateSanityBar(Percent);
+
+	// Update warning icon (show below 30%)
+	bool bShowWarning = Percent < 0.3f;
+	HorrorUI->UpdateSanityWarning(Percent, bShowWarning);
 }
 
 void AHorrorPlayerController::OnBatteryChanged(const FOnAttributeChangeData& Data)
