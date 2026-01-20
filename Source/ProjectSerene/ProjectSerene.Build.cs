@@ -18,13 +18,17 @@ public class ProjectSerene : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"ProjectSerene",
+			"ProjectSerene/GAS",
 			"ProjectSerene/Variant_Horror",
 			"ProjectSerene/Variant_Horror/UI",
 			"ProjectSerene/Variant_Shooter",
