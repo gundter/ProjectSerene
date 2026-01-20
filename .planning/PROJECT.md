@@ -44,6 +44,12 @@ The player experiences unreliable perception — they can never fully trust what
 
 **Antagonist:** Cult followers continuing the dead killer's work. Real human enemies mixed with hallucinated threats.
 
+**Player attributes (via GAS):**
+- Health — damaged by enemies, restored by med kits
+- Stamina — depleted by sprinting, restored by energy drinks
+- Sanity — decreased by darkness, restored by light/medication
+- Flashlight battery — depleted when active, restored by batteries
+
 **Sanity mechanics:**
 - Darkness decreases sanity
 - Light slowly restores sanity (capped)
@@ -63,10 +69,11 @@ The player experiences unreliable perception — they can never fully trust what
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
+| Use Gameplay Ability System (GAS) for attributes | Unified system for health, stamina, sanity, battery; enables Gameplay Effects for consumables and environmental effects | — Pending |
 | Sanity affects hallucination tell visibility | Rewards good sanity management with clearer combat | — Pending |
 | Reward trigger discipline, not punish hallucination kills | Punishing players for defeating enemies feels bad | — Pending |
 | Scripted paranoia as fallback if sanity system too complex | Demo scope management | — Pending |
 | Grounded horror with cult, no supernatural | Keeps psychological horror authentic to PTSD narrative | — Pending |
 
 ---
-*Last updated: 2026-01-19 after initialization*
+*Last updated: 2026-01-19 after requirements adjustment (GAS, consumables)*
