@@ -8,17 +8,24 @@
 
 class UInputMappingContext;
 class UHorrorUI;
+struct FOnAttributeChangeData;
 
 /**
  *  Player Controller for a first person horror game
- *  Manages input mappings
- *  Manages UI
+ *
+ *  Responsibilities:
+ *  - Input mapping management
+ *  - UI management (HorrorUI widget)
+ *  - GAS attribute change listeners (binds to ASC, forwards to HUD)
+ *
+ *  Attribute changes from GAS are received here and forwarded to HorrorUI
+ *  for display (Health, Stamina, Sanity, Battery bars).
  */
 UCLASS(abstract, config="Game")
 class PROJECTSERENE_API AHorrorPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
 protected:
 
 	/** Type of UI widget to spawn */
@@ -66,4 +73,17 @@ protected:
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
+
+	// ----------------------------------------
+	// GAS Attribute Listeners
+	// ----------------------------------------
+
+	/** Set up GAS attribute change listeners on the PlayerState's ASC */
+	void SetupAttributeListeners();
+
+	/** Attribute change handlers - receive data from GAS, forward to HUD */
+	void OnHealthChanged(const FOnAttributeChangeData& Data);
+	void OnStaminaChanged(const FOnAttributeChangeData& Data);
+	void OnSanityChanged(const FOnAttributeChangeData& Data);
+	void OnBatteryChanged(const FOnAttributeChangeData& Data);
 };
