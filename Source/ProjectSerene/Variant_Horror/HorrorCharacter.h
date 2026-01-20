@@ -12,6 +12,7 @@ class USpotLightComponent;
 class UInputAction;
 class UGameplayEffect;
 class UAbilitySystemComponent;
+class USanityPerceptionComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUpdateSprintMeterDelegate, float, Percentage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSprintStateChangedDelegate, bool, bSprinting);
@@ -28,9 +29,13 @@ class PROJECTSERENE_API AHorrorCharacter : public AProjectSereneCharacter, publi
 {
 	GENERATED_BODY()
 
-	/** Player light source */
+	/** Player light source (flashlight) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	USpotLightComponent* SpotLight;
+
+	/** Component managing sanity drain/regen based on light proximity */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	USanityPerceptionComponent* SanityPerceptionComponent;
 
 protected:
 
@@ -144,4 +149,12 @@ protected:
 
 	/** Removes the stamina drain effect */
 	void RemoveStaminaDrain();
+
+public:
+	// ----------------------------------------
+	// Component Accessors
+	// ----------------------------------------
+
+	/** Returns the sanity perception component */
+	FORCEINLINE USanityPerceptionComponent* GetSanityPerceptionComponent() const { return SanityPerceptionComponent; }
 };

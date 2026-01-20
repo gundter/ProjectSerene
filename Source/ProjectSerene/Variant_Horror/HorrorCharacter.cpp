@@ -17,9 +17,12 @@
 #include "GAS/SereneGameplayTags.h"
 #include "GameplayEffect.h"
 
+// Sanity system
+#include "Components/SanityPerceptionComponent.h"
+
 AHorrorCharacter::AHorrorCharacter()
 {
-	// create the spotlight
+	// Create the spotlight (flashlight)
 	SpotLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLight"));
 	SpotLight->SetupAttachment(GetFirstPersonCameraComponent());
 
@@ -29,6 +32,9 @@ AHorrorCharacter::AHorrorCharacter()
 	SpotLight->AttenuationRadius = 1050.0f;
 	SpotLight->InnerConeAngle = 18.7f;
 	SpotLight->OuterConeAngle = 45.24f;
+
+	// Create the sanity perception component (light-based sanity drain/regen)
+	SanityPerceptionComponent = CreateDefaultSubobject<USanityPerceptionComponent>(TEXT("SanityPerceptionComponent"));
 }
 
 void AHorrorCharacter::BeginPlay()
