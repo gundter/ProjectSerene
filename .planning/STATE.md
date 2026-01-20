@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 2 - Sanity & Perception - Plan 01 complete. SanityPerceptionComponent ready for GAS effects.
+**Current Focus:** Phase 2 - Sanity & Perception - Plan 02 complete. Visual distortion system implemented. GE_SanityDrain and GE_SanityRegen specifications documented for user creation.
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -17,13 +17,13 @@
 ## Current Position
 
 **Phase:** 2 of 10 (Sanity & Perception)
-**Plan:** 1 of 3 complete
+**Plan:** 2 of 3 complete
 **Status:** In progress
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
-Phase 2  [#..] Sanity & Perception - Plan 01 complete
+Phase 2  [##.] Sanity & Perception - Plan 02 complete
 Phase 3  [ ] Flashlight & Light System
 Phase 4  [ ] Consumables & Inventory
 Phase 5  [ ] Investigation System
@@ -33,7 +33,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [####......] 4/~30 plans complete (~13%)
+Overall: [#####.....] 5/~30 plans complete (~17%)
 ```
 
 ---
@@ -43,8 +43,8 @@ Overall: [####......] 4/~30 plans complete (~13%)
 | Metric | Value |
 |--------|-------|
 | Phases Complete | 1/10 |
-| Plans Executed | 4 |
-| Last Plan Duration | 12 min |
+| Plans Executed | 5 |
+| Last Plan Duration | 8 min |
 | Blockers Encountered | 0 |
 
 ---
@@ -70,6 +70,9 @@ Overall: [####......] 4/~30 plans complete (~13%)
 | 80% sanity regen cap via GetSanityRegenCapValue() | Light regen capped; medication can restore past 80% | 2026-01-20 |
 | Timer-based light detection (0.1s interval) | More performant than Tick; sufficient for gameplay feel | 2026-01-20 |
 | Actor tags for light filtering | FlickeringLight excludes, ProtectiveLight includes non-light actors | 2026-01-20 |
+| Linear interpolation for visual effects | FMath::Lerp between min/max; can tune to curves in playtesting | 2026-01-20 |
+| Camera post-process over volumes | Effects follow player automatically; cleaner than world placement | 2026-01-20 |
+| Component-level regen cap enforcement | CheckRegenCap() in component; simpler than custom Gameplay Effect calc | 2026-01-20 |
 
 ### Technical Notes
 
@@ -84,6 +87,7 @@ Overall: [####......] 4/~30 plans complete (~13%)
 - **UI integration:** HorrorPlayerController binds GAS delegates, HorrorUI receives percentage-based updates
 - **Sanity perception:** SanityPerceptionComponent attached to HorrorCharacter, manages light detection and GAS effects
 - **Sanity tags:** State.Sanity50, State.Sanity30, State.Sanity20 for multi-level perception effects
+- **Visual distortion:** Camera post-process settings (vignette, grain, chromatic aberration, saturation) driven by sanity percentage
 
 ### Patterns Established (Phase 1 + Phase 2)
 
@@ -98,6 +102,8 @@ Overall: [####......] 4/~30 plans complete (~13%)
 - **ActorComponent for modular systems:** SanityPerceptionComponent pattern
 - **Light caching with TWeakObjectPtr:** Safe actor references that auto-clean
 - **Grace period state machine:** bInLight + bInGracePeriod + timer callbacks
+- **Camera post-process modification:** bOverride_* flags + value setting
+- **Sanity-driven visual effects:** OnSanityChanged delegate triggers UpdateVisualDistortion
 
 ### Research Flags
 
@@ -112,17 +118,17 @@ Overall: [####......] 4/~30 plans complete (~13%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-20: Completed 02-01-PLAN.md (Sanity Core Foundation)
-- Added State_Sanity50, State_Sanity30, State_Sanity20 threshold tags
-- Created SanityPerceptionComponent with light detection and GAS effect management
-- Attached component to HorrorCharacter
-- **Plan 02-01 complete**
+- 2026-01-20: Completed 02-02-PLAN.md (GAS Effects & Visual Distortion)
+- Implemented visual distortion system with camera post-process
+- Documented GE_SanityDrain and GE_SanityRegen specifications
+- Added regen cap enforcement via CheckRegenCap
+- **Plan 02-02 complete**
 
 ### Next Session
-- Execute Plan 02-02 (Blueprint Gameplay Effects for sanity drain/regen)
-- Create GE_SanityDrain and GE_SanityRegen in Editor
-- Configure component with effect classes
-- Runtime test light-based sanity system
+- Execute Plan 02-03 (Audio distortion and perception finalization)
+- Create GE_SanityDrain and GE_SanityRegen in Unreal Editor (user action)
+- Configure BP_HorrorCharacter with effect references (user action)
+- Runtime test sanity drain/regen system with visual distortion
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -134,12 +140,14 @@ Overall: [####......] 4/~30 plans complete (~13%)
 - [x] Runtime test stamina system (verified)
 - [x] Create SanityPerceptionComponent (02-01)
 - [x] Add multi-level sanity threshold tags (02-01)
-- [ ] Create GE_SanityDrain Blueprint (02-02)
-- [ ] Create GE_SanityRegen Blueprint with 80% cap (02-02)
-- [ ] Configure SanityPerceptionComponent with effects (02-02)
+- [x] Implement visual distortion system (02-02)
+- [x] Document GE_SanityDrain and GE_SanityRegen specifications (02-02)
+- [ ] **USER ACTION:** Create GE_SanityDrain Blueprint in Editor
+- [ ] **USER ACTION:** Create GE_SanityRegen Blueprint in Editor
+- [ ] **USER ACTION:** Configure BP_HorrorCharacter with sanity effects
 - [ ] Runtime test sanity drain/regen system
-- [ ] Create post-process effects for sanity (02-03)
 - [ ] Create audio distortion for sanity (02-03)
+- [ ] Runtime test complete sanity feedback loop
 
 ---
 
