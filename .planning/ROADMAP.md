@@ -21,9 +21,9 @@ Project Serene is a psychological horror FPS demo featuring a detective with PTS
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Enable GAS plugin, create AttributeSet and core GAS classes
-- [ ] 01-02-PLAN.md — Create PlayerState with GAS ownership, integrate Character with GAS stamina
-- [ ] 01-03-PLAN.md — Wire HUD to GAS delegates, verify end-to-end
+- [x] 01-01-PLAN.md — Enable GAS plugin, create AttributeSet and core GAS classes
+- [x] 01-02-PLAN.md — Create PlayerState with GAS ownership, integrate Character with GAS stamina
+- [x] 01-03-PLAN.md — Wire HUD to GAS delegates, verify end-to-end
 
 **Requirements:**
 - ATTR-01: Gameplay Ability System (GAS) configured for attribute management
@@ -263,7 +263,7 @@ Plans:
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | Core Attributes (GAS Foundation) | 6 | Planned |
+| 1 | Core Attributes (GAS Foundation) | 6 | Complete |
 | 2 | Sanity & Perception | 5 | Pending |
 | 3 | Flashlight & Light System | 5 | Pending |
 | 4 | Consumables & Inventory | 8 | Pending |

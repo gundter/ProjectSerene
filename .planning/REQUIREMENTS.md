@@ -9,12 +9,12 @@ Requirements for demo release. Each maps to roadmap phases.
 
 ### Player Attributes (GAS)
 
-- [ ] **ATTR-01**: Gameplay Ability System (GAS) configured for attribute management
-- [ ] **ATTR-02**: Health attribute (0-100) tracked via GAS AttributeSet
-- [ ] **ATTR-03**: Stamina attribute (0-100) tracked via GAS AttributeSet
-- [ ] **ATTR-04**: Sanity attribute (0-100) tracked via GAS AttributeSet
-- [ ] **ATTR-05**: Flashlight battery attribute tracked via GAS AttributeSet
-- [ ] **ATTR-06**: Attribute changes broadcast via GAS delegates for UI/effects binding
+- [x] **ATTR-01**: Gameplay Ability System (GAS) configured for attribute management
+- [x] **ATTR-02**: Health attribute (0-100) tracked via GAS AttributeSet
+- [x] **ATTR-03**: Stamina attribute (0-100) tracked via GAS AttributeSet
+- [x] **ATTR-04**: Sanity attribute (0-100) tracked via GAS AttributeSet
+- [x] **ATTR-05**: Flashlight battery attribute tracked via GAS AttributeSet
+- [x] **ATTR-06**: Attribute changes broadcast via GAS delegates for UI/effects binding
 
 ### Sanity System
 
@@ -163,12 +163,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ATTR-01 | Phase 1 | Pending |
-| ATTR-02 | Phase 1 | Pending |
-| ATTR-03 | Phase 1 | Pending |
-| ATTR-04 | Phase 1 | Pending |
-| ATTR-05 | Phase 1 | Pending |
-| ATTR-06 | Phase 1 | Pending |
+| ATTR-01 | Phase 1 | Complete |
+| ATTR-02 | Phase 1 | Complete |
+| ATTR-03 | Phase 1 | Complete |
+| ATTR-04 | Phase 1 | Complete |
+| ATTR-05 | Phase 1 | Complete |
+| ATTR-06 | Phase 1 | Complete |
 | SANI-01 | Phase 2 | Pending |
 | SANI-02 | Phase 2 | Pending |
 | SANI-03 | Phase 2 | Pending |
