@@ -20,6 +20,9 @@
  *   - State.Dead: Health reached zero
  *   - State.Sprinting: Character is currently sprinting
  *   - State.Recovering: Stamina recovering after depletion (must reach 20% to sprint again)
+ *   - State.Sanity50: Sanity below 50% (perception effects begin)
+ *   - State.Sanity30: Sanity below 30% (explicit threshold, same as LowSanity)
+ *   - State.Sanity20: Sanity below 20% (critical level, audio muffling)
  */
 namespace SereneGameplayTags
 {
@@ -34,7 +37,7 @@ namespace SereneGameplayTags
 	/** Stamina below 20% of MaxStamina */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_LowStamina);
 
-	/** Sanity below critical threshold (30% of MaxSanity) */
+	/** Sanity below critical threshold (30% of MaxSanity) - legacy tag for compatibility */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_LowSanity);
 
 	/** Battery below 20% of MaxBattery */
@@ -42,6 +45,20 @@ namespace SereneGameplayTags
 
 	/** Health reached zero - player is dead */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
+
+	// ----------------------------------------
+	// Sanity Threshold Tags (Multiple Levels)
+	// Used by perception and audio systems
+	// ----------------------------------------
+
+	/** Sanity below 50% - perception effects begin (visual distortion starts) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Sanity50);
+
+	/** Sanity below 30% - same threshold as LowSanity (hallucinations intensify) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Sanity30);
+
+	/** Sanity below 20% - critical level (audio muffling, severe effects) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Sanity20);
 
 	// ----------------------------------------
 	// Action State Tags

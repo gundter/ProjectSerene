@@ -19,6 +19,16 @@ namespace SereneGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dead, "State.Dead", "Health reached zero - player is dead");
 
 	// ----------------------------------------
+	// Sanity Threshold Tags (Multiple Levels)
+	// ----------------------------------------
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Sanity50, "State.Sanity50", "Sanity below 50% - perception effects begin (visual distortion starts)");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Sanity30, "State.Sanity30", "Sanity below 30% - hallucinations intensify (same threshold as LowSanity)");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Sanity20, "State.Sanity20", "Sanity below 20% - critical level (audio muffling, severe effects)");
+
+	// ----------------------------------------
 	// Action State Tags
 	// ----------------------------------------
 

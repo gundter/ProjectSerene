@@ -73,6 +73,14 @@ public:
 	FGameplayAttributeData MaxSanity;
 	ATTRIBUTE_ACCESSORS(USereneAttributeSet, MaxSanity)
 
+	/**
+	 * Returns the sanity regen cap value (80% of MaxSanity).
+	 * Light-based sanity regeneration cannot exceed this value.
+	 * Medication can still restore sanity past this cap.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Attributes|Sanity")
+	float GetSanityRegenCapValue() const;
+
 	// ----------------------------------------
 	// Battery Attributes
 	// ----------------------------------------
@@ -127,6 +135,20 @@ protected:
 	virtual void OnRep_MaxBattery(const FGameplayAttributeData& OldMaxBattery);
 
 private:
+	// ----------------------------------------
+	// Sanity System Constants
+	// ----------------------------------------
+
+	/** Sanity regen cap percentage (80%) - light regen cannot exceed this */
+	static constexpr float SanityRegenCap = 0.8f;
+
+	/** Minimum sanity percentage (5%) - sanity cannot drop below this */
+	static constexpr float SanityMinimumPercent = 0.05f;
+
+	// ----------------------------------------
+	// Threshold Tag Helpers
+	// ----------------------------------------
+
 	/**
 	 * Helper to apply or remove a gameplay tag based on attribute threshold.
 	 * @param ASC - The ability system component to modify tags on
@@ -136,4 +158,12 @@ private:
 	 * @param Tag - The tag to add/remove
 	 */
 	void UpdateThresholdTag(UAbilitySystemComponent* ASC, float CurrentValue, float MaxValue, float ThresholdPercent, const FGameplayTag& Tag);
+
+	/**
+	 * Updates all sanity threshold tags (50%, 30%, 20%) based on current sanity percentage.
+	 * Called from PostGameplayEffectExecute when Sanity changes.
+	 * @param ASC - The ability system component to modify tags on
+	 * @param SanityPercent - The current sanity as a percentage (0.0 to 1.0)
+	 */
+	void UpdateSanityThresholdTags(UAbilitySystemComponent* ASC, float SanityPercent);
 };

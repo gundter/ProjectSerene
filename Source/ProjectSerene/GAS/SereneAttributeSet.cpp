@@ -51,7 +51,9 @@ void USereneAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute
 	}
 	else if (Attribute == GetSanityAttribute())
 	{
-		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxSanity());
+		// Sanity minimum is 5% of MaxSanity - player can never reach 0 sanity
+		const float MinSanity = GetMaxSanity() * SanityMinimumPercent;
+		NewValue = FMath::Clamp(NewValue, MinSanity, GetMaxSanity());
 	}
 	else if (Attribute == GetBatteryAttribute())
 	{
@@ -101,11 +103,19 @@ void USereneAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 	// Handle Sanity attribute changes
 	else if (Data.EvaluatedData.Attribute == GetSanityAttribute())
 	{
-		const float NewSanity = FMath::Clamp(GetSanity(), 0.0f, GetMaxSanity());
+		// Sanity minimum is 5% of MaxSanity - player can never reach 0 sanity
+		const float MinSanity = GetMaxSanity() * SanityMinimumPercent;
+		const float NewSanity = FMath::Clamp(GetSanity(), MinSanity, GetMaxSanity());
 		SetSanity(NewSanity);
 
-		// Apply/remove LowSanity tag based on threshold (30%)
+		// Calculate percentage for threshold tags
+		const float SanityPercent = GetMaxSanity() > 0.0f ? NewSanity / GetMaxSanity() : 0.0f;
+
+		// Apply/remove LowSanity tag based on threshold (30%) - legacy tag for compatibility
 		UpdateThresholdTag(ASC, NewSanity, GetMaxSanity(), 0.30f, SereneGameplayTags::State_LowSanity);
+
+		// Update all sanity threshold tags (50%, 30%, 20%)
+		UpdateSanityThresholdTags(ASC, SanityPercent);
 	}
 	// Handle Battery attribute changes
 	else if (Data.EvaluatedData.Attribute == GetBatteryAttribute())
@@ -136,6 +146,58 @@ void USereneAttributeSet::UpdateThresholdTag(UAbilitySystemComponent* ASC, float
 	else
 	{
 		ASC->RemoveLooseGameplayTag(Tag);
+	}
+}
+
+float USereneAttributeSet::GetSanityRegenCapValue() const
+{
+	return GetMaxSanity() * SanityRegenCap;
+}
+
+void USereneAttributeSet::UpdateSanityThresholdTags(UAbilitySystemComponent* ASC, float SanityPercent)
+{
+	if (!ASC)
+	{
+		return;
+	}
+
+	// State.Sanity50 - Sanity below 50% (perception effects begin)
+	if (SanityPercent < 0.5f)
+	{
+		if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sanity50))
+		{
+			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sanity50);
+		}
+	}
+	else
+	{
+		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sanity50);
+	}
+
+	// State.Sanity30 - Sanity below 30% (hallucinations intensify)
+	if (SanityPercent < 0.3f)
+	{
+		if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sanity30))
+		{
+			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sanity30);
+		}
+	}
+	else
+	{
+		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sanity30);
+	}
+
+	// State.Sanity20 - Sanity below 20% (critical level, audio muffling)
+	if (SanityPercent < 0.2f)
+	{
+		if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sanity20))
+		{
+			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sanity20);
+		}
+	}
+	else
+	{
+		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sanity20);
 	}
 }
 
