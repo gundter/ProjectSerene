@@ -10,6 +10,7 @@
 class UGameplayEffect;
 class UAbilitySystemComponent;
 class UCameraComponent;
+class UAudioComponent;
 class AHorrorCharacter;
 struct FOnAttributeChangeData;
 
@@ -99,6 +100,26 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Perception|Visual")
 	float MinColorSaturation = 0.6f;
 
+	// ----------------------------------------
+	// Audio Distortion Configuration
+	// ----------------------------------------
+
+	/** MetaSound to play for sanity distortion (heartbeat, breathing, whispers) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Audio")
+	USoundBase* SanityDistortionSound;
+
+	/** Sanity threshold below which heartbeat/breathing begins (50%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Audio")
+	float HeartbeatThreshold = 0.5f;
+
+	/** Sanity threshold below which whispers begin (30%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Audio")
+	float WhisperThreshold = 0.3f;
+
+	/** Sanity threshold below which world audio muffles (20%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Audio")
+	float MuffleThreshold = 0.2f;
+
 private:
 	// ----------------------------------------
 	// Cached Light Actors
@@ -142,6 +163,10 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<UCameraComponent> CachedCamera;
 
+	/** Audio component for sanity distortion sounds */
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> SanityAudioComponent;
+
 	// ----------------------------------------
 	// Core Methods
 	// ----------------------------------------
@@ -179,6 +204,16 @@ private:
 
 	/** Check if sanity has reached regen cap and stop regen if so */
 	void CheckRegenCap(float CurrentSanity, float MaxSanity);
+
+	// ----------------------------------------
+	// Audio Distortion Methods
+	// ----------------------------------------
+
+	/** Initialize audio component for sanity effects */
+	void InitializeAudioComponent();
+
+	/** Update audio distortion based on sanity percentage (0-1) */
+	void UpdateAudioDistortion(float SanityPercent);
 
 	// ----------------------------------------
 	// GAS Effect Management

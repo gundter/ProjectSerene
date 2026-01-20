@@ -11,6 +11,7 @@
 #include "Engine/SpotLight.h"
 #include "Engine/Light.h"
 #include "Camera/CameraComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameplayEffectTypes.h"
 #include "GAS/SereneAttributeSet.h"
 #include "Variant_Horror/HorrorCharacter.h"
@@ -48,10 +49,19 @@ void USanityPerceptionComponent::BeginPlay()
 
 	// Initialize post-process settings on the camera
 	InitializePostProcessSettings();
+
+	// Initialize audio component for sanity effects
+	InitializeAudioComponent();
 }
 
 void USanityPerceptionComponent::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
+	// Stop sanity audio
+	if (SanityAudioComponent && SanityAudioComponent->IsPlaying())
+	{
+		SanityAudioComponent->Stop();
+	}
+
 	// Clear all timers
 	if (UWorld* World = GetWorld())
 	{
@@ -363,6 +373,9 @@ void USanityPerceptionComponent::OnSanityChanged(const FOnAttributeChangeData& D
 	// Update visual effects
 	UpdateVisualDistortion(SanityPercent);
 
+	// Update audio effects
+	UpdateAudioDistortion(SanityPercent);
+
 	// Check if we should stop regen (reached 80% cap)
 	CheckRegenCap(Data.NewValue, MaxSanity);
 }
@@ -446,4 +459,89 @@ void USanityPerceptionComponent::CheckRegenCap(float CurrentSanity, float MaxSan
 				(RegenCapValue / MaxSanity) * 100.0f);
 		}
 	}
+}
+
+// ----------------------------------------
+// Audio Distortion Methods
+// ----------------------------------------
+
+void USanityPerceptionComponent::InitializeAudioComponent()
+{
+	if (!SanityDistortionSound)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: No SanityDistortionSound set, audio distortion disabled"));
+		return;
+	}
+
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	// Create audio component attached to owner
+	SanityAudioComponent = UGameplayStatics::SpawnSoundAttached(
+		SanityDistortionSound,
+		Owner->GetRootComponent(),
+		NAME_None,
+		FVector::ZeroVector,
+		EAttachLocation::KeepRelativeOffset,
+		true,  // Stop when attached to destroyed
+		1.0f,  // Volume multiplier
+		1.0f,  // Pitch multiplier
+		0.0f,  // Start time
+		nullptr, // Attenuation
+		nullptr, // Concurrency
+		false    // Auto destroy (false - we manage lifecycle)
+	);
+
+	if (SanityAudioComponent)
+	{
+		// Start playing but at zero intensity
+		SanityAudioComponent->SetFloatParameter(FName("HeartbeatIntensity"), 0.0f);
+		SanityAudioComponent->SetFloatParameter(FName("WhisperIntensity"), 0.0f);
+		SanityAudioComponent->SetFloatParameter(FName("MuffleAmount"), 0.0f);
+
+		UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Audio distortion initialized"));
+	}
+}
+
+void USanityPerceptionComponent::UpdateAudioDistortion(float SanityPercent)
+{
+	if (!SanityAudioComponent || !SanityAudioComponent->IsPlaying())
+	{
+		return;
+	}
+
+	// Calculate heartbeat intensity (ramps from 0 at threshold to 1 at 0%)
+	float HeartbeatIntensity = 0.0f;
+	if (SanityPercent < HeartbeatThreshold)
+	{
+		// Map [0, HeartbeatThreshold] to [1, 0]
+		HeartbeatIntensity = 1.0f - (SanityPercent / HeartbeatThreshold);
+	}
+
+	// Calculate whisper intensity (ramps from 0 at threshold to 1 at 0%)
+	float WhisperIntensity = 0.0f;
+	if (SanityPercent < WhisperThreshold)
+	{
+		// Map [0, WhisperThreshold] to [1, 0]
+		WhisperIntensity = 1.0f - (SanityPercent / WhisperThreshold);
+	}
+
+	// Calculate muffle amount (ramps from 0 at threshold to 1 at 0%)
+	float MuffleAmount = 0.0f;
+	if (SanityPercent < MuffleThreshold)
+	{
+		// Map [0, MuffleThreshold] to [1, 0]
+		MuffleAmount = 1.0f - (SanityPercent / MuffleThreshold);
+	}
+
+	// Update MetaSound parameters
+	SanityAudioComponent->SetFloatParameter(FName("HeartbeatIntensity"), HeartbeatIntensity);
+	SanityAudioComponent->SetFloatParameter(FName("WhisperIntensity"), WhisperIntensity);
+	SanityAudioComponent->SetFloatParameter(FName("MuffleAmount"), MuffleAmount);
+
+	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Audio distortion updated - Heartbeat: %.2f, Whisper: %.2f, Muffle: %.2f"),
+		HeartbeatIntensity, WhisperIntensity, MuffleAmount);
 }
