@@ -79,8 +79,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Core FlashlightComponent with toggle input and GAS battery drain
-- [ ] 03-02-PLAN.md — Visual polish: warm-up fade-in, low-battery flicker, death sequence, sprint sway
+- [x] 03-01-PLAN.md — Core FlashlightComponent with toggle input and GAS battery drain
+- [x] 03-02-PLAN.md — Visual polish: warm-up fade-in, low-battery flicker, death sequence, sprint sway
 
 **Requirements:**
 - LITE-01: Player has flashlight as primary light source
@@ -280,7 +280,7 @@ Plans:
 |-------|------|--------------|--------|
 | 1 | Core Attributes (GAS Foundation) | 6 | Complete |
 | 2 | Sanity & Perception | 5 | Complete |
-| 3 | Flashlight & Light System | 5 | Planned |
+| 3 | Flashlight & Light System | 5 | Complete |
 | 4 | Consumables & Inventory | 8 | Pending |
 | 5 | Investigation System | 8 | Pending |
 | 6 | Hallucination System | 7 | Pending |
@@ -324,3 +324,4 @@ Phase 1 (GAS Foundation)
 *Phase 1 planned: 2026-01-20*
 *Phase 2 planned: 2026-01-20*
 *Phase 3 planned: 2026-01-21*
+*Phase 3 complete: 2026-01-21*
