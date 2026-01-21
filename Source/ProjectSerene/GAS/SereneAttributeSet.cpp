@@ -138,10 +138,8 @@ void USereneAttributeSet::UpdateThresholdTag(UAbilitySystemComponent* ASC, float
 	const float Percent = CurrentValue / MaxValue;
 	if (Percent <= ThresholdPercent)
 	{
-		if (!ASC->HasMatchingGameplayTag(Tag))
-		{
-			ASC->AddLooseGameplayTag(Tag);
-		}
+		// AddLooseGameplayTag handles duplicates efficiently - no need for pre-check
+		ASC->AddLooseGameplayTag(Tag);
 	}
 	else
 	{
@@ -161,43 +159,30 @@ void USereneAttributeSet::UpdateSanityThresholdTags(UAbilitySystemComponent* ASC
 		return;
 	}
 
-	// State.Sanity50 - Sanity below 50% (perception effects begin)
-	if (SanityPercent < 0.5f)
+	// Data-driven sanity thresholds for maintainability
+	struct FSanityThreshold
 	{
-		if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sanity50))
-		{
-			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sanity50);
-		}
-	}
-	else
-	{
-		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sanity50);
-	}
+		float Percent;
+		FGameplayTag Tag;
+	};
 
-	// State.Sanity30 - Sanity below 30% (hallucinations intensify)
-	if (SanityPercent < 0.3f)
-	{
-		if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sanity30))
-		{
-			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sanity30);
-		}
-	}
-	else
-	{
-		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sanity30);
-	}
+	static const FSanityThreshold SanityThresholds[] = {
+		{ 0.5f, SereneGameplayTags::State_Sanity50 },  // Perception effects begin
+		{ 0.3f, SereneGameplayTags::State_Sanity30 },  // Hallucinations intensify
+		{ 0.2f, SereneGameplayTags::State_Sanity20 },  // Critical level, audio muffling
+	};
 
-	// State.Sanity20 - Sanity below 20% (critical level, audio muffling)
-	if (SanityPercent < 0.2f)
+	for (const FSanityThreshold& Threshold : SanityThresholds)
 	{
-		if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sanity20))
+		if (SanityPercent < Threshold.Percent)
 		{
-			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sanity20);
+			// AddLooseGameplayTag handles duplicates efficiently - no need for pre-check
+			ASC->AddLooseGameplayTag(Threshold.Tag);
 		}
-	}
-	else
-	{
-		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sanity20);
+		else
+		{
+			ASC->RemoveLooseGameplayTag(Threshold.Tag);
+		}
 	}
 }
 

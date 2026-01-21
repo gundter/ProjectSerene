@@ -73,6 +73,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Light Detection")
 	TEnumAsByte<ECollisionChannel> OcclusionTraceChannel = ECC_Visibility;
 
+	/** How long to cache occlusion trace results before re-checking (seconds) */
+	UPROPERTY(EditDefaultsOnly, Category = "Light Detection|Performance")
+	float OcclusionCacheDuration = 0.5f;
+
+	/** Minimum distance player must move before invalidating occlusion cache (cm) */
+	UPROPERTY(EditDefaultsOnly, Category = "Light Detection|Performance")
+	float OcclusionCacheInvalidationDistance = 50.0f;
+
+	/** Minimum time between light cache refreshes (seconds) */
+	UPROPERTY(EditDefaultsOnly, Category = "Light Detection|Performance")
+	float MinRefreshInterval = 1.0f;
+
+	/** Minimum sanity change threshold before updating visual/audio effects (0.001 = 0.1%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Perception|Performance")
+	float SanityUpdateThreshold = 0.001f;
+
 	// ----------------------------------------
 	// GAS Effect Classes
 	// ----------------------------------------
@@ -138,6 +154,30 @@ private:
 	UPROPERTY()
 	TArray<TWeakObjectPtr<AActor>> LightActors;
 
+	/** Cached occlusion state per light actor */
+	struct FCachedOcclusionState
+	{
+		bool bWasIlluminated = false;
+		float LastCheckTime = 0.0f;
+		FVector LastPlayerPosition = FVector::ZeroVector;
+	};
+
+	/** Map of light actor to cached occlusion state */
+	TMap<TWeakObjectPtr<AActor>, FCachedOcclusionState> OcclusionCache;
+
+	/** Last time RefreshLightCache was called (for rate limiting) */
+	float LastRefreshTime = 0.0f;
+
+	/** Last player position for occlusion cache invalidation */
+	FVector LastPlayerPosition = FVector::ZeroVector;
+
+	/** Last sanity percentage for delta threshold checking */
+	float LastSanityPercent = 1.0f;
+
+	/** Cached owner actor to avoid repeated GetOwner() calls */
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CachedOwner;
+
 	// ----------------------------------------
 	// State
 	// ----------------------------------------
@@ -186,8 +226,8 @@ private:
 	/** Periodic check for light proximity - called every LightCheckInterval */
 	void CheckLightProximity();
 
-	/** Check if player is actually illuminated by a specific light (cone + occlusion) */
-	bool IsIlluminatedByLight(AActor* LightActor, const FVector& PlayerLocation) const;
+	/** Check if player is actually illuminated by a specific light (cone + occlusion, uses cache) */
+	bool IsIlluminatedByLight(AActor* LightActor, const FVector& PlayerLocation);
 
 	/** Called when player enters a light zone */
 	void OnEnterLight();

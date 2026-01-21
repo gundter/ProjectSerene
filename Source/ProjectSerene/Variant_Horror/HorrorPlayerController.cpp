@@ -118,6 +118,9 @@ void AHorrorPlayerController::SetupAttributeListeners()
 		return;
 	}
 
+	// Cache PlayerState to avoid repeated GetPlayerState casts in attribute handlers
+	CachedPlayerState = PS;
+
 	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
 	if (!ASC)
 	{
@@ -147,13 +150,10 @@ void AHorrorPlayerController::SetupAttributeListeners()
 
 void AHorrorPlayerController::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
-	if (!HorrorUI)
-	{
-		return;
-	}
+	if (!HorrorUI) return;
 
-	// Get max health for percentage calculation
-	ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>();
+	// Use cached PlayerState for max attribute lookup
+	ASerenePlayerState* PS = CachedPlayerState.Get();
 	float MaxHealth = PS && PS->GetAttributeSet() ? PS->GetAttributeSet()->GetMaxHealth() : 100.0f;
 	float Percent = MaxHealth > 0.0f ? Data.NewValue / MaxHealth : 0.0f;
 
@@ -162,13 +162,10 @@ void AHorrorPlayerController::OnHealthChanged(const FOnAttributeChangeData& Data
 
 void AHorrorPlayerController::OnStaminaChanged(const FOnAttributeChangeData& Data)
 {
-	if (!HorrorUI)
-	{
-		return;
-	}
+	if (!HorrorUI) return;
 
-	// Get max stamina for percentage calculation
-	ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>();
+	// Use cached PlayerState for max attribute lookup
+	ASerenePlayerState* PS = CachedPlayerState.Get();
 	float MaxStamina = PS && PS->GetAttributeSet() ? PS->GetAttributeSet()->GetMaxStamina() : 100.0f;
 	float Percent = MaxStamina > 0.0f ? Data.NewValue / MaxStamina : 0.0f;
 
@@ -177,13 +174,10 @@ void AHorrorPlayerController::OnStaminaChanged(const FOnAttributeChangeData& Dat
 
 void AHorrorPlayerController::OnSanityChanged(const FOnAttributeChangeData& Data)
 {
-	if (!HorrorUI)
-	{
-		return;
-	}
+	if (!HorrorUI) return;
 
-	// Get max sanity for percentage calculation
-	ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>();
+	// Use cached PlayerState for max attribute lookup
+	ASerenePlayerState* PS = CachedPlayerState.Get();
 	float MaxSanity = PS && PS->GetAttributeSet() ? PS->GetAttributeSet()->GetMaxSanity() : 100.0f;
 	float Percent = MaxSanity > 0.0f ? Data.NewValue / MaxSanity : 0.0f;
 
@@ -200,13 +194,10 @@ void AHorrorPlayerController::OnSanityChanged(const FOnAttributeChangeData& Data
 
 void AHorrorPlayerController::OnBatteryChanged(const FOnAttributeChangeData& Data)
 {
-	if (!HorrorUI)
-	{
-		return;
-	}
+	if (!HorrorUI) return;
 
-	// Get max battery for percentage calculation
-	ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>();
+	// Use cached PlayerState for max attribute lookup
+	ASerenePlayerState* PS = CachedPlayerState.Get();
 	float MaxBattery = PS && PS->GetAttributeSet() ? PS->GetAttributeSet()->GetMaxBattery() : 100.0f;
 	float Percent = MaxBattery > 0.0f ? Data.NewValue / MaxBattery : 0.0f;
 

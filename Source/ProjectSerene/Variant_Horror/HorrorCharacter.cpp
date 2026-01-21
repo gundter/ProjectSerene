@@ -136,12 +136,11 @@ void AHorrorCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
 		return;
 	}
 
-	// Calculate stamina percentage for UI
+	// Calculate stamina percentage for recovery check
 	const float MaxStamina = AttributeSet->GetMaxStamina();
 	const float Percent = MaxStamina > 0.0f ? Data.NewValue / MaxStamina : 0.0f;
 
-	// Broadcast to UI (preserves existing delegate for Blueprint HUD compatibility)
-	OnSprintMeterUpdated.Broadcast(Percent);
+	// Note: UI update is handled by HorrorPlayerController::OnStaminaChanged -> HorrorUI::UpdateStaminaBar
 
 	// Handle recovery threshold: can't sprint again until 20% stamina
 	if (bRecovering && Data.NewValue >= MaxStamina * 0.2f)

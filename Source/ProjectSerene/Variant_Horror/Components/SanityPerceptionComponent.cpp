@@ -29,6 +29,9 @@ void USanityPerceptionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Cache owner reference to avoid repeated GetOwner() calls
+	CachedOwner = GetOwner();
+
 	// Cache all protective light actors in the level
 	CacheLightActors();
 
@@ -82,6 +85,7 @@ void USanityPerceptionComponent::EndPlay(EEndPlayReason::Type EndPlayReason)
 void USanityPerceptionComponent::CacheLightActors()
 {
 	LightActors.Empty();
+	OcclusionCache.Empty();
 
 	UWorld* World = GetWorld();
 	if (!World)
@@ -89,7 +93,7 @@ void USanityPerceptionComponent::CacheLightActors()
 		return;
 	}
 
-	AActor* OwnerActor = GetOwner();
+	AActor* OwnerActor = CachedOwner.Get();
 
 	// Iterate through all actors and find those with point or spot light components
 	// This catches both traditional ALight actors AND generic actors with light components
@@ -148,7 +152,7 @@ void USanityPerceptionComponent::CacheLightActors()
 
 void USanityPerceptionComponent::CheckLightProximity()
 {
-	AActor* Owner = GetOwner();
+	AActor* Owner = CachedOwner.Get();
 	if (!Owner)
 	{
 		return;
@@ -202,7 +206,7 @@ void USanityPerceptionComponent::CheckLightProximity()
 	}
 }
 
-bool USanityPerceptionComponent::IsIlluminatedByLight(AActor* LightActor, const FVector& PlayerLocation) const
+bool USanityPerceptionComponent::IsIlluminatedByLight(AActor* LightActor, const FVector& PlayerLocation)
 {
 	if (!LightActor)
 	{
@@ -216,104 +220,113 @@ bool USanityPerceptionComponent::IsIlluminatedByLight(AActor* LightActor, const 
 		return Distance <= LightDetectionRadius;
 	}
 
+	// Get light location for distance/cone checks
+	FVector LightLocation = LightActor->GetActorLocation();
+	float AttenuationRadius = LightDetectionRadius;
+	bool bPassedConeCheck = true;
+
 	// Try to find a spot light component first
 	USpotLightComponent* SpotLight = LightActor->FindComponentByClass<USpotLightComponent>();
 	if (SpotLight)
 	{
-		// Get the light's position and direction
-		const FVector LightLocation = SpotLight->GetComponentLocation();
-		const FVector LightForward = SpotLight->GetForwardVector();
+		LightLocation = SpotLight->GetComponentLocation();
+		AttenuationRadius = SpotLight->AttenuationRadius;
 
 		// Check distance against attenuation radius
 		const float Distance = FVector::Dist(PlayerLocation, LightLocation);
-		const float AttenuationRadius = SpotLight->AttenuationRadius;
-
 		if (Distance > AttenuationRadius)
 		{
 			return false;  // Too far from light
 		}
 
 		// Check if player is within the spot light cone
+		const FVector LightForward = SpotLight->GetForwardVector();
 		const FVector ToPlayer = (PlayerLocation - LightLocation).GetSafeNormal();
 		const float DotProduct = FVector::DotProduct(LightForward, ToPlayer);
-		const float AngleToPlayer = FMath::Acos(DotProduct);  // Radians
-
-		// Use outer cone angle (full light cone)
+		const float AngleToPlayer = FMath::Acos(DotProduct);
 		const float OuterConeAngleRad = FMath::DegreesToRadians(SpotLight->OuterConeAngle);
 
 		if (AngleToPlayer > OuterConeAngleRad)
 		{
 			return false;  // Player is outside the light cone
 		}
-
-		// Cone check passed, now check occlusion
-		if (bCheckLightOcclusion)
-		{
-			FHitResult HitResult;
-			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(GetOwner());  // Ignore player
-			QueryParams.AddIgnoredActor(LightActor);  // Ignore light actor
-
-			bool bHit = GetWorld()->LineTraceSingleByChannel(
-				HitResult,
-				LightLocation,
-				PlayerLocation,
-				OcclusionTraceChannel,
-				QueryParams
-			);
-
-			if (bHit)
-			{
-				return false;  // Something is blocking the light
-			}
-		}
-
-		return true;  // Player is illuminated by this spot light
 	}
-
-	// Try point light component
-	UPointLightComponent* PointLight = LightActor->FindComponentByClass<UPointLightComponent>();
-	if (PointLight)
+	else
 	{
-		const FVector LightLocation = PointLight->GetComponentLocation();
-
-		// Check distance against attenuation radius
-		const float Distance = FVector::Dist(PlayerLocation, LightLocation);
-		const float AttenuationRadius = PointLight->AttenuationRadius;
-
-		if (Distance > AttenuationRadius)
+		// Try point light component
+		UPointLightComponent* PointLight = LightActor->FindComponentByClass<UPointLightComponent>();
+		if (PointLight)
 		{
-			return false;  // Too far from light
+			LightLocation = PointLight->GetComponentLocation();
+			AttenuationRadius = PointLight->AttenuationRadius;
+
+			const float Distance = FVector::Dist(PlayerLocation, LightLocation);
+			if (Distance > AttenuationRadius)
+			{
+				return false;  // Too far from light
+			}
+		}
+		else
+		{
+			// No recognized light component, fall back to simple distance check
+			const float Distance = FVector::Dist(PlayerLocation, LightActor->GetActorLocation());
+			return Distance <= LightDetectionRadius;
+		}
+	}
+
+	// Occlusion check with caching
+	if (bCheckLightOcclusion)
+	{
+		UWorld* World = GetWorld();
+		if (!World)
+		{
+			return true;  // Can't check, assume illuminated
 		}
 
-		// Point lights have no cone, just check occlusion
-		if (bCheckLightOcclusion)
+		const float CurrentTime = World->GetTimeSeconds();
+		TWeakObjectPtr<AActor> LightActorPtr = LightActor;
+
+		// Check if we have a valid cached result
+		FCachedOcclusionState* CachedState = OcclusionCache.Find(LightActorPtr);
+		if (CachedState)
 		{
-			FHitResult HitResult;
-			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(GetOwner());  // Ignore player
-			QueryParams.AddIgnoredActor(LightActor);  // Ignore light actor
+			// Check if cache is still valid (time not expired and player hasn't moved much)
+			const float TimeSinceCheck = CurrentTime - CachedState->LastCheckTime;
+			const float DistanceMoved = FVector::Dist(PlayerLocation, CachedState->LastPlayerPosition);
 
-			bool bHit = GetWorld()->LineTraceSingleByChannel(
-				HitResult,
-				LightLocation,
-				PlayerLocation,
-				OcclusionTraceChannel,
-				QueryParams
-			);
-
-			if (bHit)
+			if (TimeSinceCheck < OcclusionCacheDuration && DistanceMoved < OcclusionCacheInvalidationDistance)
 			{
-				return false;  // Something is blocking the light
+				// Use cached result
+				return CachedState->bWasIlluminated;
 			}
 		}
 
-		return true;  // Player is illuminated by this point light
+		// Perform the expensive line trace
+		FHitResult HitResult;
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(CachedOwner.Get());
+		QueryParams.AddIgnoredActor(LightActor);
+
+		const bool bHit = World->LineTraceSingleByChannel(
+			HitResult,
+			LightLocation,
+			PlayerLocation,
+			OcclusionTraceChannel,
+			QueryParams
+		);
+
+		const bool bIlluminated = !bHit;
+
+		// Update cache
+		FCachedOcclusionState& NewState = OcclusionCache.FindOrAdd(LightActorPtr);
+		NewState.bWasIlluminated = bIlluminated;
+		NewState.LastCheckTime = CurrentTime;
+		NewState.LastPlayerPosition = PlayerLocation;
+
+		return bIlluminated;
 	}
 
-	// No recognized light component, fall back to simple distance check
-	const float Distance = FVector::Dist(PlayerLocation, LightActor->GetActorLocation());
-	return Distance <= LightDetectionRadius;
+	return true;  // No occlusion check needed, passed distance/cone checks
 }
 
 void USanityPerceptionComponent::OnEnterLight()
@@ -387,7 +400,7 @@ void USanityPerceptionComponent::StartSanityDrain()
 
 	// Apply the drain effect
 	FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
-	ContextHandle.AddSourceObject(GetOwner());
+	ContextHandle.AddSourceObject(CachedOwner.Get());
 
 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(SanityDrainEffect, 1, ContextHandle);
 	if (SpecHandle.IsValid())
@@ -428,7 +441,7 @@ void USanityPerceptionComponent::StartSanityRegen()
 
 	// Apply the regen effect
 	FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
-	ContextHandle.AddSourceObject(GetOwner());
+	ContextHandle.AddSourceObject(CachedOwner.Get());
 
 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(SanityRegenEffect, 1, ContextHandle);
 	if (SpecHandle.IsValid())
@@ -455,7 +468,7 @@ void USanityPerceptionComponent::StopSanityRegen()
 
 UAbilitySystemComponent* USanityPerceptionComponent::GetOwnerASC() const
 {
-	AActor* Owner = GetOwner();
+	AActor* Owner = CachedOwner.Get();
 	if (!Owner)
 	{
 		return nullptr;
@@ -472,6 +485,19 @@ UAbilitySystemComponent* USanityPerceptionComponent::GetOwnerASC() const
 
 void USanityPerceptionComponent::RefreshLightCache()
 {
+	// Rate limit refresh calls to prevent performance issues
+	if (UWorld* World = GetWorld())
+	{
+		const float CurrentTime = World->GetTimeSeconds();
+		if ((CurrentTime - LastRefreshTime) < MinRefreshInterval)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SanityPerceptionComponent: RefreshLightCache called too frequently (%.2fs since last), skipping"),
+				CurrentTime - LastRefreshTime);
+			return;
+		}
+		LastRefreshTime = CurrentTime;
+	}
+
 	CacheLightActors();
 	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Light cache refreshed, %d lights cached"), LightActors.Num());
 }
@@ -507,13 +533,20 @@ void USanityPerceptionComponent::OnSanityChanged(const FOnAttributeChangeData& D
 	float MaxSanity = AttributeSet ? AttributeSet->GetMaxSanity() : 100.0f;
 	float SanityPercent = MaxSanity > 0.0f ? Data.NewValue / MaxSanity : 0.0f;
 
-	// Update visual effects
-	UpdateVisualDistortion(SanityPercent);
+	// Only update visual/audio if sanity changed by more than threshold (reduces redundant updates)
+	const float SanityDelta = FMath::Abs(SanityPercent - LastSanityPercent);
+	if (SanityDelta > SanityUpdateThreshold)
+	{
+		LastSanityPercent = SanityPercent;
 
-	// Update audio effects
-	UpdateAudioDistortion(SanityPercent);
+		// Update visual effects
+		UpdateVisualDistortion(SanityPercent);
 
-	// Check if we should stop regen (reached 80% cap)
+		// Update audio effects
+		UpdateAudioDistortion(SanityPercent);
+	}
+
+	// Always check regen cap (doesn't update UI, just manages effect lifecycle)
 	CheckRegenCap(Data.NewValue, MaxSanity);
 }
 
@@ -550,7 +583,7 @@ void USanityPerceptionComponent::UpdateVisualDistortion(float SanityPercent)
 
 void USanityPerceptionComponent::InitializePostProcessSettings()
 {
-	AHorrorCharacter* Character = Cast<AHorrorCharacter>(GetOwner());
+	AHorrorCharacter* Character = Cast<AHorrorCharacter>(CachedOwner.Get());
 	if (!Character)
 	{
 		return;
@@ -610,9 +643,10 @@ void USanityPerceptionComponent::InitializeAudioComponent()
 		return;
 	}
 
-	AActor* Owner = GetOwner();
+	AActor* Owner = CachedOwner.Get();
 	if (!Owner)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("SanityPerceptionComponent: No owner for audio component"));
 		return;
 	}
 
@@ -632,15 +666,18 @@ void USanityPerceptionComponent::InitializeAudioComponent()
 		false    // Auto destroy (false - we manage lifecycle)
 	);
 
-	if (SanityAudioComponent)
+	if (!SanityAudioComponent)
 	{
-		// Start playing but at zero intensity
-		SanityAudioComponent->SetFloatParameter(FName("HeartbeatIntensity"), 0.0f);
-		SanityAudioComponent->SetFloatParameter(FName("WhisperIntensity"), 0.0f);
-		SanityAudioComponent->SetFloatParameter(FName("MuffleAmount"), 0.0f);
-
-		UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Audio distortion initialized"));
+		UE_LOG(LogTemp, Error, TEXT("SanityPerceptionComponent: Failed to create audio component"));
+		return;
 	}
+
+	// Start playing but at zero intensity
+	SanityAudioComponent->SetFloatParameter(FName("HeartbeatIntensity"), 0.0f);
+	SanityAudioComponent->SetFloatParameter(FName("WhisperIntensity"), 0.0f);
+	SanityAudioComponent->SetFloatParameter(FName("MuffleAmount"), 0.0f);
+
+	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Audio distortion initialized"));
 }
 
 void USanityPerceptionComponent::UpdateAudioDistortion(float SanityPercent)

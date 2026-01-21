@@ -6,9 +6,8 @@
 
 void UHorrorUI::SetupCharacter(AHorrorCharacter* HorrorCharacter)
 {
-	// Legacy binding for existing character delegates (stamina via Character)
-	// Note: New GAS-based updates come from PlayerController->UpdateStaminaBar()
-	HorrorCharacter->OnSprintMeterUpdated.AddDynamic(this, &UHorrorUI::OnSprintMeterUpdated);
+	// Bind sprint state changes (not duplicated - only Character handles this)
+	// Note: Stamina UI updates are now handled by PlayerController::OnStaminaChanged -> UpdateStaminaBar
 	HorrorCharacter->OnSprintStateChanged.AddDynamic(this, &UHorrorUI::OnSprintStateChanged);
 }
 

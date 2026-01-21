@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UHorrorUI;
+class ASerenePlayerState;
 struct FOnAttributeChangeData;
 
 /**
@@ -90,4 +91,8 @@ protected:
 private:
 	/** Tracks whether sanity warning is currently active (for edge detection) */
 	bool bSanityWarningActive = false;
+
+	/** Cached PlayerState reference to avoid repeated GetPlayerState casts */
+	UPROPERTY()
+	TWeakObjectPtr<ASerenePlayerState> CachedPlayerState;
 };
