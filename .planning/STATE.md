@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 2 - Sanity & Perception - COMPLETE. Full sanity system with light detection, visual distortion, audio distortion framework, and HUD warning. Ready for Phase 3.
+**Current Focus:** Phase 3 - Flashlight & Light System - IN PROGRESS. Plan 01 complete (core toggle with battery drain). Continuing to Plan 02 (battery states and flicker).
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -16,15 +16,15 @@
 
 ## Current Position
 
-**Phase:** 2 of 10 (Sanity & Perception) - COMPLETE
-**Plan:** 3 of 3 complete
-**Status:** Ready for Phase 3
+**Phase:** 3 of 10 (Flashlight & Light System)
+**Plan:** 1 of 3 complete
+**Status:** In progress
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
 Phase 2  [###] Sanity & Perception - COMPLETE
-Phase 3  [ ] Flashlight & Light System
+Phase 3  [#..] Flashlight & Light System - IN PROGRESS (1/3)
 Phase 4  [ ] Consumables & Inventory
 Phase 5  [ ] Investigation System
 Phase 6  [ ] Hallucination System
@@ -33,7 +33,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [######....] 6/~30 plans complete (~20%)
+Overall: [#######...] 7/~30 plans complete (~23%)
 ```
 
 ---
@@ -43,8 +43,8 @@ Overall: [######....] 6/~30 plans complete (~20%)
 | Metric | Value |
 |--------|-------|
 | Phases Complete | 2/10 |
-| Plans Executed | 6 |
-| Last Plan Duration | ~45 min (incl. bug fixes) |
+| Plans Executed | 7 |
+| Last Plan Duration | ~4 min |
 | Blockers Encountered | 0 |
 
 ---
@@ -77,6 +77,8 @@ Overall: [######....] 6/~30 plans complete (~20%)
 | Spot light cone validation | Use OuterConeAngle to verify player is within actual illumination | 2026-01-21 |
 | Line trace occlusion for lights | Walls/floors block light detection; configurable via bCheckLightOcclusion | 2026-01-21 |
 | Edge detection for UI warnings | Only fire events when crossing threshold, not on every attribute change | 2026-01-21 |
+| FlashlightComponent owns behavior, not light | SpotLight stays on Character (camera attachment), component controls via Initialize() | 2026-01-21 |
+| Battery depletion auto-off via GAS delegate | OnBatteryChanged monitors and calls TransitionToState(Off) at 0% | 2026-01-21 |
 
 ### Technical Notes
 
@@ -95,8 +97,9 @@ Overall: [######....] 6/~30 plans complete (~20%)
 - **Audio distortion:** MetaSound parameters (HeartbeatIntensity, WhisperIntensity, MuffleAmount) ready for sound design
 - **HUD warning:** Edge-detected sanity warning below 30%, Blueprint animation support
 - **Light detection:** Cone + occlusion validation, excludes player flashlight
+- **Flashlight system:** FlashlightComponent with Off/On state machine, GAS battery drain, State.FlashlightOn tag
 
-### Patterns Established (Phase 1 + Phase 2)
+### Patterns Established (Phase 1 + Phase 2 + Phase 3)
 
 - ASC on PlayerState, Character as Avatar (IAbilitySystemInterface forwarding)
 - PossessedBy is initialization point for GAS on player characters
@@ -106,7 +109,7 @@ Overall: [######....] 6/~30 plans complete (~20%)
 - State tags under State.* namespace for gameplay conditions
 - ATTRIBUTE_ACCESSORS macro for standardized attribute access
 - **Multi-threshold tag management:** UpdateSanityThresholdTags pattern in AttributeSet
-- **ActorComponent for modular systems:** SanityPerceptionComponent pattern
+- **ActorComponent for modular systems:** SanityPerceptionComponent, FlashlightComponent patterns
 - **Light caching with TWeakObjectPtr:** Safe actor references that auto-clean
 - **Grace period state machine:** bInLight + bInGracePeriod + timer callbacks
 - **Camera post-process modification:** bOverride_* flags + value setting
@@ -114,6 +117,7 @@ Overall: [######....] 6/~30 plans complete (~20%)
 - **IsIlluminatedByLight pattern:** Distance + cone angle + line trace occlusion
 - **TActorIterator with component filtering:** Flexible actor discovery by component type
 - **Edge detection for UI events:** Track previous state, only fire on change
+- **Component delegation pattern:** FlashlightComponent.Initialize(SpotLight) for external light control
 
 ### Research Flags
 
@@ -128,19 +132,18 @@ Overall: [######....] 6/~30 plans complete (~20%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-21: Completed 02-03-PLAN.md (Audio Distortion & HUD Warning)
-- Implemented audio distortion system with MetaSound parameters
-- Added HUD sanity warning with edge detection optimization
-- Fixed light detection: component search, cone validation, occlusion tracing
-- Fixed initial darkness state handling
-- User created GE_SanityDrain and GE_SanityRegen Blueprints
-- User implemented warning icon in UI_Horror widget
-- **Phase 2 COMPLETE**
+- 2026-01-21: Completed 03-01-PLAN.md (Core Flashlight Toggle)
+- Created FlashlightComponent with Off/On state machine
+- Added GAS battery drain via BatteryDrainEffect
+- Added State.FlashlightOn gameplay tag
+- Integrated into HorrorCharacter with input binding
+- **Blueprint configuration required:** IA_ToggleFlashlight, GE_BatteryDrain, BP_HorrorCharacter settings
 
 ### Next Session
-- Plan Phase 3 (Flashlight & Light System)
-- Or execute Phase 3 if already planned
-- Consider creating MetaSound asset for audio distortion
+- Execute 03-02-PLAN.md (Battery States & Flicker)
+- Add WarmingUp, Flickering, DyingOut states
+- Implement battery threshold flicker below 20%
+- Or: User configures Blueprint assets first, then continues
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -161,6 +164,13 @@ Overall: [######....] 6/~30 plans complete (~20%)
 - [x] Create audio distortion framework (02-03)
 - [x] Add HUD warning icon (02-03)
 - [x] Runtime test complete sanity feedback loop
+- [x] Create FlashlightComponent with GAS battery drain (03-01)
+- [x] Add State.FlashlightOn gameplay tag (03-01)
+- [x] Integrate flashlight into HorrorCharacter (03-01)
+- [ ] **USER:** Create IA_ToggleFlashlight Input Action in Editor
+- [ ] **USER:** Create GE_BatteryDrain Gameplay Effect in Editor
+- [ ] **USER:** Configure BP_HorrorCharacter with flashlight settings
+- [ ] **USER:** Runtime test flashlight toggle and battery drain
 - [ ] **OPTIONAL:** Create MS_SanityDistortion MetaSound asset for audio
 
 ---
