@@ -4,6 +4,7 @@
 #include "GAS/SereneAbilitySystemComponent.h"
 #include "GAS/SereneAttributeSet.h"
 #include "GameplayEffect.h"
+#include "ProjectSerene.h"
 
 ASerenePlayerState::ASerenePlayerState()
 {
@@ -24,13 +25,13 @@ void ASerenePlayerState::InitializeAttributes()
 {
 	if (!AbilitySystemComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SerenePlayerState: Cannot initialize attributes - ASC is null"));
+		UE_LOG(LogProjectSerene, Warning, TEXT("SerenePlayerState: Cannot initialize attributes - ASC is null"));
 		return;
 	}
 
 	if (!DefaultAttributeEffect)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SerenePlayerState: Cannot initialize attributes - DefaultAttributeEffect is not set. Assign GE_InitializeAttributes in Blueprint."));
+		UE_LOG(LogProjectSerene, Warning, TEXT("SerenePlayerState: Cannot initialize attributes - DefaultAttributeEffect is not set. Assign GE_InitializeAttributes in Blueprint."));
 		return;
 	}
 
@@ -45,11 +46,9 @@ void ASerenePlayerState::InitializeAttributes()
 	{
 		// Apply the instant effect to set initial attribute values
 		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-
-		UE_LOG(LogTemp, Log, TEXT("SerenePlayerState: Attributes initialized via %s"), *DefaultAttributeEffect->GetName());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("SerenePlayerState: Failed to create spec handle for DefaultAttributeEffect"));
+		UE_LOG(LogProjectSerene, Error, TEXT("SerenePlayerState: Failed to create spec handle for DefaultAttributeEffect"));
 	}
 }

@@ -84,11 +84,17 @@ void USereneAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 		// Handle death (Health == 0)
 		if (NewHealth <= 0.0f)
 		{
-			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Dead);
+			if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Dead))
+			{
+				ASC->AddLooseGameplayTag(SereneGameplayTags::State_Dead);
+			}
 		}
 		else
 		{
-			ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Dead);
+			if (ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Dead))
+			{
+				ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Dead);
+			}
 		}
 	}
 	// Handle Stamina attribute changes
@@ -138,12 +144,20 @@ void USereneAttributeSet::UpdateThresholdTag(UAbilitySystemComponent* ASC, float
 	const float Percent = CurrentValue / MaxValue;
 	if (Percent <= ThresholdPercent)
 	{
-		// AddLooseGameplayTag handles duplicates efficiently - no need for pre-check
-		ASC->AddLooseGameplayTag(Tag);
+		// Pre-check required: AddLooseGameplayTag uses reference counting, so calling it
+		// repeatedly will increment the count even if tag already exists
+		if (!ASC->HasMatchingGameplayTag(Tag))
+		{
+			ASC->AddLooseGameplayTag(Tag);
+		}
 	}
 	else
 	{
-		ASC->RemoveLooseGameplayTag(Tag);
+		// Only remove if tag exists to avoid log warnings
+		if (ASC->HasMatchingGameplayTag(Tag))
+		{
+			ASC->RemoveLooseGameplayTag(Tag);
+		}
 	}
 }
 
@@ -176,12 +190,20 @@ void USereneAttributeSet::UpdateSanityThresholdTags(UAbilitySystemComponent* ASC
 	{
 		if (SanityPercent < Threshold.Percent)
 		{
-			// AddLooseGameplayTag handles duplicates efficiently - no need for pre-check
-			ASC->AddLooseGameplayTag(Threshold.Tag);
+			// Pre-check required: AddLooseGameplayTag uses reference counting, so calling it
+			// repeatedly will increment the count even if tag already exists
+			if (!ASC->HasMatchingGameplayTag(Threshold.Tag))
+			{
+				ASC->AddLooseGameplayTag(Threshold.Tag);
+			}
 		}
 		else
 		{
-			ASC->RemoveLooseGameplayTag(Threshold.Tag);
+			// Only remove if tag exists to avoid log warnings
+			if (ASC->HasMatchingGameplayTag(Threshold.Tag))
+			{
+				ASC->RemoveLooseGameplayTag(Threshold.Tag);
+			}
 		}
 	}
 }

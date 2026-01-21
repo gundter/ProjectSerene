@@ -18,6 +18,7 @@
 #include "GameplayEffectTypes.h"
 #include "GAS/SereneAttributeSet.h"
 #include "Variant_Horror/HorrorCharacter.h"
+#include "ProjectSerene.h"
 
 USanityPerceptionComponent::USanityPerceptionComponent()
 {
@@ -45,9 +46,6 @@ void USanityPerceptionComponent::BeginPlay()
 			LightCheckInterval,
 			true  // Looping
 		);
-
-		UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Started light check timer (%.2fs interval), cached %d lights"),
-			LightCheckInterval, LightActors.Num());
 	}
 
 	// Set up sanity listener for visual effects
@@ -137,17 +135,6 @@ void USanityPerceptionComponent::CacheLightActors()
 			LightActors.Add(Actor);
 		}
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Cached %d protective light sources (excluding owner)"), LightActors.Num());
-
-	// Log each cached light for debugging
-	for (int32 i = 0; i < LightActors.Num(); ++i)
-	{
-		if (AActor* LightActor = LightActors[i].Get())
-		{
-			UE_LOG(LogTemp, Log, TEXT("  [%d] %s at %s"), i, *LightActor->GetName(), *LightActor->GetActorLocation().ToString());
-		}
-	}
 }
 
 void USanityPerceptionComponent::CheckLightProximity()
@@ -200,7 +187,6 @@ void USanityPerceptionComponent::CheckLightProximity()
 		{
 			// Never was in light and drain not active - start draining immediately
 			// This handles the case where player spawns in darkness
-			UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Player in darkness (no nearby lights), starting sanity drain"));
 			StartSanityDrain();
 		}
 	}
@@ -331,8 +317,6 @@ bool USanityPerceptionComponent::IsIlluminatedByLight(AActor* LightActor, const 
 
 void USanityPerceptionComponent::OnEnterLight()
 {
-	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Entered light zone"));
-
 	bInLight = true;
 
 	// Cancel grace period if running (player returned to light before grace ended)
@@ -352,8 +336,6 @@ void USanityPerceptionComponent::OnEnterLight()
 
 void USanityPerceptionComponent::OnExitLight()
 {
-	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Exited light zone, starting %.1fs grace period"), GracePeriodDuration);
-
 	// Start grace period - don't change bInLight yet
 	bInGracePeriod = true;
 
@@ -375,8 +357,6 @@ void USanityPerceptionComponent::OnExitLight()
 
 void USanityPerceptionComponent::OnGracePeriodEnded()
 {
-	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Grace period ended, starting sanity drain"));
-
 	bInGracePeriod = false;
 	bInLight = false;
 
@@ -406,7 +386,6 @@ void USanityPerceptionComponent::StartSanityDrain()
 	if (SpecHandle.IsValid())
 	{
 		DrainHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity drain effect applied"));
 	}
 }
 
@@ -421,7 +400,6 @@ void USanityPerceptionComponent::StopSanityDrain()
 	{
 		ASC->RemoveActiveGameplayEffect(DrainHandle);
 		DrainHandle.Invalidate();
-		UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity drain effect removed"));
 	}
 }
 
@@ -447,7 +425,6 @@ void USanityPerceptionComponent::StartSanityRegen()
 	if (SpecHandle.IsValid())
 	{
 		RegenHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity regen effect applied"));
 	}
 }
 
@@ -462,7 +439,6 @@ void USanityPerceptionComponent::StopSanityRegen()
 	{
 		ASC->RemoveActiveGameplayEffect(RegenHandle);
 		RegenHandle.Invalidate();
-		UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity regen effect removed"));
 	}
 }
 
@@ -491,7 +467,7 @@ void USanityPerceptionComponent::RefreshLightCache()
 		const float CurrentTime = World->GetTimeSeconds();
 		if ((CurrentTime - LastRefreshTime) < MinRefreshInterval)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("SanityPerceptionComponent: RefreshLightCache called too frequently (%.2fs since last), skipping"),
+			UE_LOG(LogProjectSerene, Warning, TEXT("SanityPerceptionComponent: RefreshLightCache called too frequently (%.2fs since last), skipping"),
 				CurrentTime - LastRefreshTime);
 			return;
 		}
@@ -499,7 +475,6 @@ void USanityPerceptionComponent::RefreshLightCache()
 	}
 
 	CacheLightActors();
-	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Light cache refreshed, %d lights cached"), LightActors.Num());
 }
 
 // ----------------------------------------
@@ -517,8 +492,6 @@ void USanityPerceptionComponent::SetupSanityListener()
 	ASC->GetGameplayAttributeValueChangeDelegate(
 		USereneAttributeSet::GetSanityAttribute())
 		.AddUObject(this, &USanityPerceptionComponent::OnSanityChanged);
-
-	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity change listener registered"));
 }
 
 void USanityPerceptionComponent::OnSanityChanged(const FOnAttributeChangeData& Data)
@@ -576,9 +549,6 @@ void USanityPerceptionComponent::UpdateVisualDistortion(float SanityPercent)
 	// Color desaturation (cold/blue tint at low sanity)
 	float Saturation = FMath::Lerp(1.0f, MinColorSaturation, DistortionScale);
 	Camera->PostProcessSettings.ColorSaturation = FVector4(Saturation, Saturation, Saturation, 1.0f);
-
-	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Visual distortion updated - Sanity: %.1f%%, Distortion: %.2f"),
-		SanityPercent * 100.0f, DistortionScale);
 }
 
 void USanityPerceptionComponent::InitializePostProcessSettings()
@@ -612,8 +582,6 @@ void USanityPerceptionComponent::InitializePostProcessSettings()
 	Camera->PostProcessSettings.FilmGrainIntensity = 0.0f;
 	Camera->PostProcessSettings.SceneFringeIntensity = 0.0f;
 	Camera->PostProcessSettings.ColorSaturation = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
-
-	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Post-process settings initialized"));
 }
 
 void USanityPerceptionComponent::CheckRegenCap(float CurrentSanity, float MaxSanity)
@@ -625,8 +593,6 @@ void USanityPerceptionComponent::CheckRegenCap(float CurrentSanity, float MaxSan
 		if (CurrentSanity >= RegenCapValue)
 		{
 			StopSanityRegen();
-			UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Sanity reached regen cap (%.1f%%), regen stopped"),
-				(RegenCapValue / MaxSanity) * 100.0f);
 		}
 	}
 }
@@ -639,14 +605,13 @@ void USanityPerceptionComponent::InitializeAudioComponent()
 {
 	if (!SanityDistortionSound)
 	{
-		UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: No SanityDistortionSound set, audio distortion disabled"));
 		return;
 	}
 
 	AActor* Owner = CachedOwner.Get();
 	if (!Owner)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SanityPerceptionComponent: No owner for audio component"));
+		UE_LOG(LogProjectSerene, Warning, TEXT("SanityPerceptionComponent: No owner for audio component"));
 		return;
 	}
 
@@ -668,7 +633,7 @@ void USanityPerceptionComponent::InitializeAudioComponent()
 
 	if (!SanityAudioComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("SanityPerceptionComponent: Failed to create audio component"));
+		UE_LOG(LogProjectSerene, Error, TEXT("SanityPerceptionComponent: Failed to create audio component"));
 		return;
 	}
 
@@ -676,8 +641,6 @@ void USanityPerceptionComponent::InitializeAudioComponent()
 	SanityAudioComponent->SetFloatParameter(FName("HeartbeatIntensity"), 0.0f);
 	SanityAudioComponent->SetFloatParameter(FName("WhisperIntensity"), 0.0f);
 	SanityAudioComponent->SetFloatParameter(FName("MuffleAmount"), 0.0f);
-
-	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Audio distortion initialized"));
 }
 
 void USanityPerceptionComponent::UpdateAudioDistortion(float SanityPercent)
@@ -715,7 +678,4 @@ void USanityPerceptionComponent::UpdateAudioDistortion(float SanityPercent)
 	SanityAudioComponent->SetFloatParameter(FName("HeartbeatIntensity"), HeartbeatIntensity);
 	SanityAudioComponent->SetFloatParameter(FName("WhisperIntensity"), WhisperIntensity);
 	SanityAudioComponent->SetFloatParameter(FName("MuffleAmount"), MuffleAmount);
-
-	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Audio distortion updated - Heartbeat: %.2f, Whisper: %.2f, Muffle: %.2f"),
-		HeartbeatIntensity, WhisperIntensity, MuffleAmount);
 }

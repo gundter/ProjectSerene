@@ -92,8 +92,6 @@ void AHorrorCharacter::PossessedBy(AController* NewController)
 
 			// Start stamina regen (will be blocked by sprinting tag when sprint starts)
 			StartStaminaRegen();
-
-			UE_LOG(LogTemp, Log, TEXT("HorrorCharacter: GAS initialized, stamina regen started"));
 		}
 	}
 }
@@ -152,8 +150,6 @@ void AHorrorCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
 		{
 			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 		}
-
-		UE_LOG(LogTemp, Log, TEXT("HorrorCharacter: Recovery complete, sprinting allowed"));
 	}
 
 	// Force stop sprint if stamina depleted
@@ -164,8 +160,6 @@ void AHorrorCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
 
 		// Set recovering walk speed
 		GetCharacterMovement()->MaxWalkSpeed = RecoveringWalkSpeed;
-
-		UE_LOG(LogTemp, Log, TEXT("HorrorCharacter: Stamina depleted, entering recovery mode"));
 	}
 }
 
@@ -203,13 +197,14 @@ void AHorrorCharacter::DoStartSprint()
 	// Add State.Sprinting tag to ASC
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 	{
-		ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sprinting);
+		if (!ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sprinting))
+		{
+			ASC->AddLooseGameplayTag(SereneGameplayTags::State_Sprinting);
+		}
 	}
 
 	// Broadcast sprint state changed for UI
 	OnSprintStateChanged.Broadcast(true);
-
-	UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Sprint started"));
 }
 
 void AHorrorCharacter::DoEndSprint()
@@ -229,7 +224,10 @@ void AHorrorCharacter::DoEndSprint()
 	// Remove State.Sprinting tag from ASC
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
 	{
-		ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sprinting);
+		if (ASC->HasMatchingGameplayTag(SereneGameplayTags::State_Sprinting))
+		{
+			ASC->RemoveLooseGameplayTag(SereneGameplayTags::State_Sprinting);
+		}
 	}
 
 	// Set walk speed (either normal or recovering)
@@ -253,8 +251,6 @@ void AHorrorCharacter::DoEndSprint()
 
 	// Broadcast sprint state changed for UI
 	OnSprintStateChanged.Broadcast(false);
-
-	UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Sprint ended, regen starting in %.1f seconds"), StaminaRegenDelay);
 }
 
 void AHorrorCharacter::StartStaminaRegen()
@@ -285,7 +281,6 @@ void AHorrorCharacter::StartStaminaRegen()
 	if (SpecHandle.IsValid())
 	{
 		ActiveRegenHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina regen effect applied"));
 	}
 }
 
@@ -300,7 +295,6 @@ void AHorrorCharacter::StopStaminaRegen()
 	{
 		ASC->RemoveActiveGameplayEffect(ActiveRegenHandle);
 		ActiveRegenHandle.Invalidate();
-		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina regen effect removed"));
 	}
 }
 
@@ -326,7 +320,6 @@ void AHorrorCharacter::ApplyStaminaDrain()
 	if (SpecHandle.IsValid())
 	{
 		ActiveDrainHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina drain effect applied"));
 	}
 }
 
@@ -341,6 +334,5 @@ void AHorrorCharacter::RemoveStaminaDrain()
 	{
 		ASC->RemoveActiveGameplayEffect(ActiveDrainHandle);
 		ActiveDrainHandle.Invalidate();
-		UE_LOG(LogTemp, Verbose, TEXT("HorrorCharacter: Stamina drain effect removed"));
 	}
 }
