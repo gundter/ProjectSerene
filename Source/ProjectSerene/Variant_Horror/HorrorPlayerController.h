@@ -86,4 +86,8 @@ protected:
 	void OnStaminaChanged(const FOnAttributeChangeData& Data);
 	void OnSanityChanged(const FOnAttributeChangeData& Data);
 	void OnBatteryChanged(const FOnAttributeChangeData& Data);
+
+private:
+	/** Tracks whether sanity warning is currently active (for edge detection) */
+	bool bSanityWarningActive = false;
 };

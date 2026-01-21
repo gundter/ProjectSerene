@@ -189,9 +189,13 @@ void AHorrorPlayerController::OnSanityChanged(const FOnAttributeChangeData& Data
 
 	HorrorUI->UpdateSanityBar(Percent);
 
-	// Update warning icon (show below 30%)
-	bool bShowWarning = Percent < 0.3f;
-	HorrorUI->UpdateSanityWarning(Percent, bShowWarning);
+	// Update warning icon only when crossing the 30% threshold (edge detection)
+	bool bShouldShowWarning = Percent < 0.3f;
+	if (bShouldShowWarning != bSanityWarningActive)
+	{
+		bSanityWarningActive = bShouldShowWarning;
+		HorrorUI->UpdateSanityWarning(Percent, bSanityWarningActive);
+	}
 }
 
 void AHorrorPlayerController::OnBatteryChanged(const FOnAttributeChangeData& Data)
