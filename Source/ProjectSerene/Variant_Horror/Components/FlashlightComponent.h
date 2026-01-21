@@ -11,13 +11,15 @@ class USpotLightComponent;
 class UGameplayEffect;
 class UAbilitySystemComponent;
 class USoundBase;
+class UCurveFloat;
+class UTimelineComponent;
 struct FOnAttributeChangeData;
 
 /**
  * EFlashlightState
  *
  * Represents the current state of the flashlight.
- * Simple state machine for Plan 01 - will be extended with WarmingUp, Flickering, DyingOut in Plan 02.
+ * Full state machine with visual polish states.
  */
 UENUM(BlueprintType)
 enum class EFlashlightState : uint8
@@ -25,8 +27,17 @@ enum class EFlashlightState : uint8
 	/** Flashlight is off */
 	Off,
 
-	/** Flashlight is on and illuminating */
-	On
+	/** Flashlight is fading in (~0.5s), no battery drain yet */
+	WarmingUp,
+
+	/** Flashlight is on at full brightness, draining battery */
+	On,
+
+	/** Battery < 10%, subtle flicker + battery drain continues */
+	Flickering,
+
+	/** Battery depleted, dramatic 1-2s death sequence */
+	DyingOut
 };
 
 /**
@@ -34,9 +45,11 @@ enum class EFlashlightState : uint8
  *
  * Manages flashlight state, battery drain, and GAS integration.
  * Attached to HorrorCharacter, this component:
- * - Controls flashlight toggle on/off
- * - Applies battery drain Gameplay Effect when flashlight is on
- * - Monitors Battery attribute to auto-off when depleted
+ * - Controls flashlight toggle on/off with warm-up fade-in
+ * - Applies battery drain Gameplay Effect when flashlight is on/flickering
+ * - Monitors Battery attribute for flicker threshold and auto-off
+ * - Implements dramatic death sequence when battery depletes
+ * - Adds sprint sway via rotation offset
  * - Manages State.FlashlightOn gameplay tag for system awareness
  *
  * The actual SpotLightComponent lives on HorrorCharacter (attached to camera).
@@ -53,14 +66,19 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// ----------------------------------------
-	// Configuration
+	// Configuration - Battery Drain
 	// ----------------------------------------
 
 	/** Gameplay Effect that drains battery while flashlight is on (Infinite with Period) */
 	UPROPERTY(EditDefaultsOnly, Category = "GAS|Battery")
 	TSubclassOf<UGameplayEffect> BatteryDrainEffect;
+
+	// ----------------------------------------
+	// Configuration - Audio
+	// ----------------------------------------
 
 	/** Sound to play when flashlight turns on */
 	UPROPERTY(EditDefaultsOnly, Category = "Audio")
@@ -70,9 +88,53 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Audio")
 	USoundBase* ToggleOffSound;
 
-	/** Base flashlight intensity in lumens (used when restoring light after flicker in Plan 02) */
+	// ----------------------------------------
+	// Configuration - Light
+	// ----------------------------------------
+
+	/** Base flashlight intensity in lumens */
 	UPROPERTY(EditDefaultsOnly, Category = "Light")
 	float BaseIntensity = 5000.0f;
+
+	// ----------------------------------------
+	// Configuration - Curves
+	// ----------------------------------------
+
+	/** Curve defining intensity ramp during warm-up (0->1 over ~0.5s) */
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight|Curves")
+	UCurveFloat* WarmupCurve;
+
+	/** Curve defining intensity decay during death sequence (1->0 over ~1.5s) */
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight|Curves")
+	UCurveFloat* DeathCurve;
+
+	// ----------------------------------------
+	// Configuration - Flicker
+	// ----------------------------------------
+
+	/** Battery percentage threshold below which flickering begins (10% = 0.10) */
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight|Flicker", meta = (ClampMin = "0.0", ClampMax = "0.5"))
+	float FlickerThreshold = 0.10f;
+
+	/** Flicker frequency multiplier for Perlin noise */
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight|Flicker", meta = (ClampMin = "1.0", ClampMax = "20.0"))
+	float FlickerFrequency = 8.0f;
+
+	/** Minimum intensity during flicker (relative to base, 0.3 = 30%) */
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight|Flicker", meta = (ClampMin = "0.1", ClampMax = "0.9"))
+	float FlickerMinIntensity = 0.3f;
+
+	// ----------------------------------------
+	// Configuration - Sprint Sway
+	// ----------------------------------------
+
+	/** Maximum pitch sway in degrees during sprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight|Sprint", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float MaxSwayPitch = 3.0f;
+
+	/** Maximum yaw sway in degrees during sprint */
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight|Sprint", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+	float MaxSwayYaw = 2.0f;
 
 private:
 	// ----------------------------------------
@@ -102,6 +164,38 @@ private:
 	FActiveGameplayEffectHandle DrainHandle;
 
 	// ----------------------------------------
+	// Timeline Components
+	// ----------------------------------------
+
+	/** Timeline for warm-up fade-in */
+	UPROPERTY()
+	UTimelineComponent* WarmupTimeline;
+
+	/** Timeline for death sequence fade-out */
+	UPROPERTY()
+	UTimelineComponent* DeathTimeline;
+
+	// ----------------------------------------
+	// Flicker State
+	// ----------------------------------------
+
+	/** Timer handle for flicker updates */
+	FTimerHandle FlickerTimer;
+
+	/** Time accumulator for flicker Perlin noise */
+	float FlickerTime = 0.0f;
+
+	// ----------------------------------------
+	// Sprint Sway State
+	// ----------------------------------------
+
+	/** Time accumulator for sway calculation */
+	float SwayTime = 0.0f;
+
+	/** Cached base rotation of spotlight */
+	FRotator BaseRotation;
+
+	// ----------------------------------------
 	// Core Methods
 	// ----------------------------------------
 
@@ -124,11 +218,63 @@ private:
 	/** Sets the SpotLight visibility */
 	void SetLightEnabled(bool bEnabled);
 
+	/** Sets the SpotLight intensity */
+	void SetLightIntensity(float Intensity);
+
 	/** Get the owning character's Ability System Component */
 	UAbilitySystemComponent* GetOwnerASC() const;
 
-	/** Add or remove the State.FlashlightOn gameplay tag */
-	void SetFlashlightTag(bool bAdd);
+	/** Add the State.FlashlightOn gameplay tag */
+	void AddFlashlightTag();
+
+	/** Remove the State.FlashlightOn gameplay tag */
+	void RemoveFlashlightTag();
+
+	/** Play toggle sound based on direction */
+	void PlayToggleSound(bool bTurningOn);
+
+	// ----------------------------------------
+	// Timeline Methods
+	// ----------------------------------------
+
+	/** Creates and configures timeline components */
+	void SetupTimelines();
+
+	/** Called each tick of warm-up timeline */
+	UFUNCTION()
+	void OnWarmupTick(float Value);
+
+	/** Called when warm-up timeline finishes */
+	UFUNCTION()
+	void OnWarmupFinished();
+
+	/** Called each tick of death timeline */
+	UFUNCTION()
+	void OnDeathTick(float Value);
+
+	/** Called when death timeline finishes */
+	UFUNCTION()
+	void OnDeathFinished();
+
+	// ----------------------------------------
+	// Flicker Methods
+	// ----------------------------------------
+
+	/** Starts the flicker timer loop */
+	void StartFlickerLoop();
+
+	/** Stops the flicker timer loop */
+	void StopFlickerLoop();
+
+	// ----------------------------------------
+	// Battery Helpers
+	// ----------------------------------------
+
+	/** Gets current battery value from GAS */
+	float GetCurrentBattery() const;
+
+	/** Gets max battery value from GAS */
+	float GetMaxBattery() const;
 
 public:
 	// ----------------------------------------
@@ -144,15 +290,20 @@ public:
 
 	/**
 	 * Toggles the flashlight on or off.
-	 * - If Off and Battery > 0: turns on
-	 * - If On: turns off
+	 * - If Off and Battery > 0: starts warm-up
+	 * - If On or Flickering: turns off
+	 * - Ignored during WarmingUp or DyingOut
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Flashlight")
 	void Toggle();
 
-	/** Returns true if the flashlight is currently on */
+	/** Returns true if the flashlight is currently producing light (any state except Off) */
 	UFUNCTION(BlueprintPure, Category = "Flashlight")
-	bool IsOn() const { return CurrentState == EFlashlightState::On; }
+	bool IsOn() const { return CurrentState != EFlashlightState::Off; }
+
+	/** Returns true if flashlight is in a stable on state (On or Flickering) */
+	UFUNCTION(BlueprintPure, Category = "Flashlight")
+	bool IsFlashlightActive() const { return CurrentState == EFlashlightState::On || CurrentState == EFlashlightState::Flickering; }
 
 	/** Returns the current flashlight state */
 	UFUNCTION(BlueprintPure, Category = "Flashlight")
