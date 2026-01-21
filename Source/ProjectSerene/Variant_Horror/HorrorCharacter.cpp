@@ -20,6 +20,9 @@
 // Sanity system
 #include "Components/SanityPerceptionComponent.h"
 
+// Flashlight system
+#include "Components/FlashlightComponent.h"
+
 AHorrorCharacter::AHorrorCharacter()
 {
 	// Create the spotlight (flashlight)
@@ -35,6 +38,10 @@ AHorrorCharacter::AHorrorCharacter()
 
 	// Create the sanity perception component (light-based sanity drain/regen)
 	SanityPerceptionComponent = CreateDefaultSubobject<USanityPerceptionComponent>(TEXT("SanityPerceptionComponent"));
+
+	// Create the flashlight component and initialize with our SpotLight
+	FlashlightComponent = CreateDefaultSubobject<UFlashlightComponent>(TEXT("FlashlightComponent"));
+	FlashlightComponent->Initialize(SpotLight);
 }
 
 void AHorrorCharacter::BeginPlay()
@@ -117,6 +124,17 @@ void AHorrorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		// Sprinting
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AHorrorCharacter::DoStartSprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AHorrorCharacter::DoEndSprint);
+
+		// Flashlight toggle (F key)
+		EnhancedInputComponent->BindAction(ToggleFlashlightAction, ETriggerEvent::Started, this, &AHorrorCharacter::ToggleFlashlight);
+	}
+}
+
+void AHorrorCharacter::ToggleFlashlight()
+{
+	if (FlashlightComponent)
+	{
+		FlashlightComponent->Toggle();
 	}
 }
 

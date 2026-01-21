@@ -13,6 +13,7 @@ class UInputAction;
 class UGameplayEffect;
 class UAbilitySystemComponent;
 class USanityPerceptionComponent;
+class UFlashlightComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FUpdateSprintMeterDelegate, float, Percentage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSprintStateChangedDelegate, bool, bSprinting);
@@ -37,11 +38,19 @@ class PROJECTSERENE_API AHorrorCharacter : public AProjectSereneCharacter, publi
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	USanityPerceptionComponent* SanityPerceptionComponent;
 
+	/** Component managing flashlight state, battery drain, and light control */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UFlashlightComponent* FlashlightComponent;
+
 protected:
 
 	/** Sprint input action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* SprintAction;
+
+	/** Toggle flashlight input action */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* ToggleFlashlightAction;
 
 	/** If true, the sprint key is currently held down */
 	bool bSprintKeyHeld = false;
@@ -167,6 +176,13 @@ protected:
 	/** Checks if character is moving and updates drain state accordingly */
 	void CheckSprintMovement();
 
+	// ----------------------------------------
+	// Flashlight Input
+	// ----------------------------------------
+
+	/** Toggles the flashlight on/off - bound to input action */
+	void ToggleFlashlight();
+
 public:
 	// ----------------------------------------
 	// Component Accessors
@@ -174,4 +190,7 @@ public:
 
 	/** Returns the sanity perception component */
 	FORCEINLINE USanityPerceptionComponent* GetSanityPerceptionComponent() const { return SanityPerceptionComponent; }
+
+	/** Returns the flashlight component */
+	FORCEINLINE UFlashlightComponent* GetFlashlightComponent() const { return FlashlightComponent; }
 };
