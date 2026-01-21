@@ -52,8 +52,9 @@ void AHorrorCharacter::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	// Clear the regen delay timer
+	// Clear all timers
 	GetWorld()->GetTimerManager().ClearTimer(RegenDelayTimer);
+	GetWorld()->GetTimerManager().ClearTimer(SprintMovementCheckTimer);
 
 	// Remove any active gameplay effects
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
@@ -146,14 +147,14 @@ void AHorrorCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
 		bRecovering = false;
 
 		// Restore normal walk speed if not trying to sprint
-		if (!bSprinting)
+		if (!bSprintKeyHeld)
 		{
 			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 		}
 	}
 
 	// Force stop sprint if stamina depleted
-	if (Data.NewValue <= 0.0f && bSprinting)
+	if (Data.NewValue <= 0.0f && bSprintKeyHeld)
 	{
 		DoEndSprint();
 		bRecovering = true;
@@ -181,15 +182,14 @@ void AHorrorCharacter::DoStartSprint()
 		}
 	}
 
-	// Set the sprinting flag
-	bSprinting = true;
+	// Set the sprint key held flag
+	bSprintKeyHeld = true;
 
 	// Cancel any pending regen delay
 	GetWorld()->GetTimerManager().ClearTimer(RegenDelayTimer);
 
-	// Stop regen and start drain
+	// Stop regen (will start drain only when moving)
 	StopStaminaRegen();
-	ApplyStaminaDrain();
 
 	// Set the sprint walk speed
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
@@ -203,20 +203,36 @@ void AHorrorCharacter::DoStartSprint()
 		}
 	}
 
-	// Broadcast sprint state changed for UI
-	OnSprintStateChanged.Broadcast(true);
+	// Start periodic movement check to apply/remove drain based on velocity
+	// The OnSprintStateChanged delegate will be broadcast from CheckSprintMovement
+	// when actual movement is detected
+	GetWorld()->GetTimerManager().SetTimer(
+		SprintMovementCheckTimer,
+		this,
+		&AHorrorCharacter::CheckSprintMovement,
+		SprintMovementCheckInterval,
+		true,  // Looping
+		0.0f   // First delay (immediate first check)
+	);
 }
 
 void AHorrorCharacter::DoEndSprint()
 {
 	// Prevent double-calls
-	if (!bSprinting)
+	if (!bSprintKeyHeld)
 	{
 		return;
 	}
 
-	// Clear the sprinting flag
-	bSprinting = false;
+	// Track if we were actually sprinting (for UI broadcast)
+	const bool bWasSprinting = bIsSprinting;
+
+	// Clear the sprint flags
+	bSprintKeyHeld = false;
+	bIsSprinting = false;
+
+	// Stop the movement check timer
+	GetWorld()->GetTimerManager().ClearTimer(SprintMovementCheckTimer);
 
 	// Remove drain effect
 	RemoveStaminaDrain();
@@ -249,8 +265,11 @@ void AHorrorCharacter::DoEndSprint()
 		false
 	);
 
-	// Broadcast sprint state changed for UI
-	OnSprintStateChanged.Broadcast(false);
+	// Broadcast sprint state changed for UI (only if we were actually sprinting)
+	if (bWasSprinting)
+	{
+		OnSprintStateChanged.Broadcast(false);
+	}
 }
 
 void AHorrorCharacter::StartStaminaRegen()
@@ -261,8 +280,8 @@ void AHorrorCharacter::StartStaminaRegen()
 		return;
 	}
 
-	// Don't start regen if we're currently sprinting
-	if (bSprinting)
+	// Don't start regen if sprint key is held
+	if (bSprintKeyHeld)
 	{
 		return;
 	}
@@ -334,5 +353,38 @@ void AHorrorCharacter::RemoveStaminaDrain()
 	{
 		ASC->RemoveActiveGameplayEffect(ActiveDrainHandle);
 		ActiveDrainHandle.Invalidate();
+	}
+}
+
+void AHorrorCharacter::CheckSprintMovement()
+{
+	// Get the character's current horizontal velocity
+	const FVector Velocity = GetVelocity();
+	const float HorizontalSpeed = FVector(Velocity.X, Velocity.Y, 0.0f).Size();
+	const bool bIsMoving = HorizontalSpeed >= MinSprintVelocity;
+
+	if (bIsMoving)
+	{
+		// Character is moving - apply drain if not already active
+		if (!bIsSprinting)
+		{
+			bIsSprinting = true;
+			ApplyStaminaDrain();
+
+			// Broadcast sprint state changed for UI
+			OnSprintStateChanged.Broadcast(true);
+		}
+	}
+	else
+	{
+		// Character is not moving - remove drain if active
+		if (bIsSprinting)
+		{
+			bIsSprinting = false;
+			RemoveStaminaDrain();
+
+			// Broadcast sprint state changed for UI
+			OnSprintStateChanged.Broadcast(false);
+		}
 	}
 }

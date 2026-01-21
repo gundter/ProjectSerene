@@ -43,11 +43,25 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* SprintAction;
 
-	/** If true, we're sprinting (input held down) */
-	bool bSprinting = false;
+	/** If true, the sprint key is currently held down */
+	bool bSprintKeyHeld = false;
+
+	/** If true, we're actively sprinting (key held AND moving) */
+	bool bIsSprinting = false;
 
 	/** If true, we're recovering stamina (must reach 20% before sprinting allowed) */
 	bool bRecovering = false;
+
+	/** Minimum velocity required to consider the character "moving" for sprint drain (cm/s) */
+	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0))
+	float MinSprintVelocity = 10.0f;
+
+	/** Timer handle for periodic sprint movement check */
+	FTimerHandle SprintMovementCheckTimer;
+
+	/** Interval for checking movement while sprint key is held (seconds) */
+	UPROPERTY(EditAnywhere, Category="Sprint", meta = (ClampMin = 0.01, ClampMax = 0.5))
+	float SprintMovementCheckInterval = 0.1f;
 
 	/** Default walk speed when not sprinting or recovering */
 	UPROPERTY(EditAnywhere, Category="Walk")
@@ -149,6 +163,9 @@ protected:
 
 	/** Removes the stamina drain effect */
 	void RemoveStaminaDrain();
+
+	/** Checks if character is moving and updates drain state accordingly */
+	void CheckSprintMovement();
 
 public:
 	// ----------------------------------------
