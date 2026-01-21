@@ -23,6 +23,7 @@
  *   - State.Sanity50: Sanity below 50% (perception effects begin)
  *   - State.Sanity30: Sanity below 30% (explicit threshold, same as LowSanity)
  *   - State.Sanity20: Sanity below 20% (critical level, audio muffling)
+ *   - State.FlashlightOn: Flashlight is currently on (draining battery)
  */
 namespace SereneGameplayTags
 {
@@ -70,4 +71,7 @@ namespace SereneGameplayTags
 
 	/** Stamina is recovering after depletion - must reach 20% before sprinting allowed */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Recovering);
+
+	/** Flashlight is currently on (draining battery) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_FlashlightOn);
 }

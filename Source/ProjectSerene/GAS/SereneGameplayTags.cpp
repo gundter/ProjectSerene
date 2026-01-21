@@ -35,4 +35,6 @@ namespace SereneGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Sprinting, "State.Sprinting", "Character is currently sprinting - stamina drain active");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Recovering, "State.Recovering", "Stamina is recovering after depletion - must reach 20% before sprinting allowed");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_FlashlightOn, "State.FlashlightOn", "Flashlight is currently on - battery drain active");
 }
