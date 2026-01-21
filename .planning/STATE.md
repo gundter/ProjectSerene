@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 3 - Flashlight & Light System - IN PROGRESS. Plan 01 complete (core toggle with battery drain). Continuing to Plan 02 (battery states and flicker).
+**Current Focus:** Phase 3 - Flashlight & Light System - IN PROGRESS. Plan 02 complete (battery states and flicker). One plan remaining (hidden detail reveal).
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -17,14 +17,14 @@
 ## Current Position
 
 **Phase:** 3 of 10 (Flashlight & Light System)
-**Plan:** 1 of 3 complete
+**Plan:** 2 of 3 complete
 **Status:** In progress
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
 Phase 2  [###] Sanity & Perception - COMPLETE
-Phase 3  [#..] Flashlight & Light System - IN PROGRESS (1/3)
+Phase 3  [##.] Flashlight & Light System - IN PROGRESS (2/3)
 Phase 4  [ ] Consumables & Inventory
 Phase 5  [ ] Investigation System
 Phase 6  [ ] Hallucination System
@@ -33,7 +33,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [#######...] 7/~30 plans complete (~23%)
+Overall: [########..] 8/~30 plans complete (~27%)
 ```
 
 ---
@@ -43,7 +43,7 @@ Overall: [#######...] 7/~30 plans complete (~23%)
 | Metric | Value |
 |--------|-------|
 | Phases Complete | 2/10 |
-| Plans Executed | 7 |
+| Plans Executed | 8 |
 | Last Plan Duration | ~4 min |
 | Blockers Encountered | 0 |
 
@@ -79,6 +79,10 @@ Overall: [#######...] 7/~30 plans complete (~23%)
 | Edge detection for UI warnings | Only fire events when crossing threshold, not on every attribute change | 2026-01-21 |
 | FlashlightComponent owns behavior, not light | SpotLight stays on Character (camera attachment), component controls via Initialize() | 2026-01-21 |
 | Battery depletion auto-off via GAS delegate | OnBatteryChanged monitors and calls TransitionToState(Off) at 0% | 2026-01-21 |
+| UTimelineComponent for flashlight curves | Standard UE pattern for warm-up and death sequences | 2026-01-21 |
+| Perlin noise for flicker | FMath::PerlinNoise1D for organic variation without visible patterns | 2026-01-21 |
+| 10% flicker threshold | Late warning creates tension, matches horror game conventions | 2026-01-21 |
+| Sprint sway in TickComponent | Needs every-frame smoothness for rotation interpolation | 2026-01-21 |
 
 ### Technical Notes
 
@@ -97,7 +101,7 @@ Overall: [#######...] 7/~30 plans complete (~23%)
 - **Audio distortion:** MetaSound parameters (HeartbeatIntensity, WhisperIntensity, MuffleAmount) ready for sound design
 - **HUD warning:** Edge-detected sanity warning below 30%, Blueprint animation support
 - **Light detection:** Cone + occlusion validation, excludes player flashlight
-- **Flashlight system:** FlashlightComponent with Off/On state machine, GAS battery drain, State.FlashlightOn tag
+- **Flashlight system:** FlashlightComponent with full state machine (Off, WarmingUp, On, Flickering, DyingOut), GAS battery drain, State.FlashlightOn tag, timeline-driven curves, Perlin noise flicker, sprint sway
 
 ### Patterns Established (Phase 1 + Phase 2 + Phase 3)
 
@@ -118,6 +122,9 @@ Overall: [#######...] 7/~30 plans complete (~23%)
 - **TActorIterator with component filtering:** Flexible actor discovery by component type
 - **Edge detection for UI events:** Track previous state, only fire on change
 - **Component delegation pattern:** FlashlightComponent.Initialize(SpotLight) for external light control
+- **Timeline-component pattern:** NewObject<UTimelineComponent> with curve binding for animations
+- **Perlin noise flicker pattern:** FMath::PerlinNoise1D for organic procedural variation
+- **Sprint sway rotation pattern:** Sinusoidal offset with smooth return interpolation
 
 ### Research Flags
 
@@ -132,18 +139,16 @@ Overall: [#######...] 7/~30 plans complete (~23%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-21: Completed 03-01-PLAN.md (Core Flashlight Toggle)
-- Created FlashlightComponent with Off/On state machine
-- Added GAS battery drain via BatteryDrainEffect
-- Added State.FlashlightOn gameplay tag
-- Integrated into HorrorCharacter with input binding
-- **Blueprint configuration required:** IA_ToggleFlashlight, GE_BatteryDrain, BP_HorrorCharacter settings
+- 2026-01-21: Completed 03-02-PLAN.md (Battery States & Flicker)
+- Extended FlashlightComponent with WarmingUp, Flickering, DyingOut states
+- Added UTimelineComponent for warm-up and death curve sequences
+- Implemented Perlin noise flicker at 10% battery threshold
+- Added sprint sway via sinusoidal rotation offset
+- **Blueprint configuration required:** C_FlashlightWarmup curve, C_FlashlightDeath curve, BP_HorrorCharacter settings
 
 ### Next Session
-- Execute 03-02-PLAN.md (Battery States & Flicker)
-- Add WarmingUp, Flickering, DyingOut states
-- Implement battery threshold flicker below 20%
-- Or: User configures Blueprint assets first, then continues
+- Execute 03-03-PLAN.md (Hidden Detail Reveal via UV Mode)
+- Or: User configures Blueprint curve assets first, then continues
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -167,10 +172,16 @@ Overall: [#######...] 7/~30 plans complete (~23%)
 - [x] Create FlashlightComponent with GAS battery drain (03-01)
 - [x] Add State.FlashlightOn gameplay tag (03-01)
 - [x] Integrate flashlight into HorrorCharacter (03-01)
+- [x] Extend flashlight with warm-up, flicker, death states (03-02)
+- [x] Add timeline-based curve sequences (03-02)
+- [x] Implement Perlin noise flicker (03-02)
+- [x] Add sprint sway (03-02)
 - [ ] **USER:** Create IA_ToggleFlashlight Input Action in Editor
 - [ ] **USER:** Create GE_BatteryDrain Gameplay Effect in Editor
-- [ ] **USER:** Configure BP_HorrorCharacter with flashlight settings
-- [ ] **USER:** Runtime test flashlight toggle and battery drain
+- [ ] **USER:** Create C_FlashlightWarmup Float Curve in Editor
+- [ ] **USER:** Create C_FlashlightDeath Float Curve in Editor
+- [ ] **USER:** Configure BP_HorrorCharacter with flashlight settings and curves
+- [ ] **USER:** Runtime test flashlight toggle, battery drain, warm-up, flicker, death
 - [ ] **OPTIONAL:** Create MS_SanityDistortion MetaSound asset for audio
 
 ---
