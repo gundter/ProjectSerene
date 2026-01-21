@@ -1,6 +1,6 @@
 # Project State: Project Serene
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-01-21
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 2 - Sanity & Perception - Plan 02 complete. Visual distortion system implemented. GE_SanityDrain and GE_SanityRegen specifications documented for user creation.
+**Current Focus:** Phase 2 - Sanity & Perception - COMPLETE. Full sanity system with light detection, visual distortion, audio distortion framework, and HUD warning. Ready for Phase 3.
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -16,14 +16,14 @@
 
 ## Current Position
 
-**Phase:** 2 of 10 (Sanity & Perception)
-**Plan:** 2 of 3 complete
-**Status:** In progress
+**Phase:** 2 of 10 (Sanity & Perception) - COMPLETE
+**Plan:** 3 of 3 complete
+**Status:** Ready for Phase 3
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
-Phase 2  [##.] Sanity & Perception - Plan 02 complete
+Phase 2  [###] Sanity & Perception - COMPLETE
 Phase 3  [ ] Flashlight & Light System
 Phase 4  [ ] Consumables & Inventory
 Phase 5  [ ] Investigation System
@@ -33,7 +33,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [#####.....] 5/~30 plans complete (~17%)
+Overall: [######....] 6/~30 plans complete (~20%)
 ```
 
 ---
@@ -42,9 +42,9 @@ Overall: [#####.....] 5/~30 plans complete (~17%)
 
 | Metric | Value |
 |--------|-------|
-| Phases Complete | 1/10 |
-| Plans Executed | 5 |
-| Last Plan Duration | 8 min |
+| Phases Complete | 2/10 |
+| Plans Executed | 6 |
+| Last Plan Duration | ~45 min (incl. bug fixes) |
 | Blockers Encountered | 0 |
 
 ---
@@ -73,6 +73,10 @@ Overall: [#####.....] 5/~30 plans complete (~17%)
 | Linear interpolation for visual effects | FMath::Lerp between min/max; can tune to curves in playtesting | 2026-01-20 |
 | Camera post-process over volumes | Effects follow player automatically; cleaner than world placement | 2026-01-20 |
 | Component-level regen cap enforcement | CheckRegenCap() in component; simpler than custom Gameplay Effect calc | 2026-01-20 |
+| Component-based light detection | Search for UPointLightComponent/USpotLightComponent, not ALight actors | 2026-01-21 |
+| Spot light cone validation | Use OuterConeAngle to verify player is within actual illumination | 2026-01-21 |
+| Line trace occlusion for lights | Walls/floors block light detection; configurable via bCheckLightOcclusion | 2026-01-21 |
+| Edge detection for UI warnings | Only fire events when crossing threshold, not on every attribute change | 2026-01-21 |
 
 ### Technical Notes
 
@@ -88,6 +92,9 @@ Overall: [#####.....] 5/~30 plans complete (~17%)
 - **Sanity perception:** SanityPerceptionComponent attached to HorrorCharacter, manages light detection and GAS effects
 - **Sanity tags:** State.Sanity50, State.Sanity30, State.Sanity20 for multi-level perception effects
 - **Visual distortion:** Camera post-process settings (vignette, grain, chromatic aberration, saturation) driven by sanity percentage
+- **Audio distortion:** MetaSound parameters (HeartbeatIntensity, WhisperIntensity, MuffleAmount) ready for sound design
+- **HUD warning:** Edge-detected sanity warning below 30%, Blueprint animation support
+- **Light detection:** Cone + occlusion validation, excludes player flashlight
 
 ### Patterns Established (Phase 1 + Phase 2)
 
@@ -104,6 +111,9 @@ Overall: [#####.....] 5/~30 plans complete (~17%)
 - **Grace period state machine:** bInLight + bInGracePeriod + timer callbacks
 - **Camera post-process modification:** bOverride_* flags + value setting
 - **Sanity-driven visual effects:** OnSanityChanged delegate triggers UpdateVisualDistortion
+- **IsIlluminatedByLight pattern:** Distance + cone angle + line trace occlusion
+- **TActorIterator with component filtering:** Flexible actor discovery by component type
+- **Edge detection for UI events:** Track previous state, only fire on change
 
 ### Research Flags
 
@@ -111,24 +121,26 @@ Overall: [#####.....] 5/~30 plans complete (~17%)
 |------|--------|-------|
 | Hallucination tells | Needs prototyping | Few documented patterns; learnable tells require experimentation |
 | PTSD representation | Needs consultation | Mental health consultation recommended before narrative design |
-| Sanity-audio integration | Needs prototyping | MetaSounds procedural parameters need testing |
+| Sanity-audio integration | Framework ready | MetaSound asset needs creation; C++ parameters implemented |
 
 ---
 
 ## Session Continuity
 
 ### Last Session
-- 2026-01-20: Completed 02-02-PLAN.md (GAS Effects & Visual Distortion)
-- Implemented visual distortion system with camera post-process
-- Documented GE_SanityDrain and GE_SanityRegen specifications
-- Added regen cap enforcement via CheckRegenCap
-- **Plan 02-02 complete**
+- 2026-01-21: Completed 02-03-PLAN.md (Audio Distortion & HUD Warning)
+- Implemented audio distortion system with MetaSound parameters
+- Added HUD sanity warning with edge detection optimization
+- Fixed light detection: component search, cone validation, occlusion tracing
+- Fixed initial darkness state handling
+- User created GE_SanityDrain and GE_SanityRegen Blueprints
+- User implemented warning icon in UI_Horror widget
+- **Phase 2 COMPLETE**
 
 ### Next Session
-- Execute Plan 02-03 (Audio distortion and perception finalization)
-- Create GE_SanityDrain and GE_SanityRegen in Unreal Editor (user action)
-- Configure BP_HorrorCharacter with effect references (user action)
-- Runtime test sanity drain/regen system with visual distortion
+- Plan Phase 3 (Flashlight & Light System)
+- Or execute Phase 3 if already planned
+- Consider creating MetaSound asset for audio distortion
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -142,12 +154,14 @@ Overall: [#####.....] 5/~30 plans complete (~17%)
 - [x] Add multi-level sanity threshold tags (02-01)
 - [x] Implement visual distortion system (02-02)
 - [x] Document GE_SanityDrain and GE_SanityRegen specifications (02-02)
-- [ ] **USER ACTION:** Create GE_SanityDrain Blueprint in Editor
-- [ ] **USER ACTION:** Create GE_SanityRegen Blueprint in Editor
-- [ ] **USER ACTION:** Configure BP_HorrorCharacter with sanity effects
-- [ ] Runtime test sanity drain/regen system
-- [ ] Create audio distortion for sanity (02-03)
-- [ ] Runtime test complete sanity feedback loop
+- [x] Create GE_SanityDrain Blueprint in Editor
+- [x] Create GE_SanityRegen Blueprint in Editor
+- [x] Configure BP_HorrorCharacter with sanity effects
+- [x] Runtime test sanity drain/regen system
+- [x] Create audio distortion framework (02-03)
+- [x] Add HUD warning icon (02-03)
+- [x] Runtime test complete sanity feedback loop
+- [ ] **OPTIONAL:** Create MS_SanityDistortion MetaSound asset for audio
 
 ---
 
@@ -158,4 +172,4 @@ None currently.
 ---
 
 *State initialized: 2026-01-19*
-*Last updated: 2026-01-20*
+*Last updated: 2026-01-21*
