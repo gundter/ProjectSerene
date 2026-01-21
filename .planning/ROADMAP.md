@@ -50,9 +50,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Core sanity mechanics: threshold tags, AttributeSet updates, SanityPerceptionComponent with light detection
-- [ ] 02-02-PLAN.md — Gameplay Effects for drain/regen, visual distortion via post-process
-- [ ] 02-03-PLAN.md — Audio distortion, HUD warning icon, end-to-end verification
+- [x] 02-01-PLAN.md — Core sanity mechanics: threshold tags, AttributeSet updates, SanityPerceptionComponent with light detection
+- [x] 02-02-PLAN.md — Gameplay Effects for drain/regen, visual distortion via post-process
+- [x] 02-03-PLAN.md — Audio distortion, HUD warning icon, end-to-end verification
 
 **Requirements:**
 - SANI-01: Darkness exposure decreases sanity over time (via Gameplay Effect)
@@ -72,9 +72,15 @@ Plans:
 
 ## Phase 3: Flashlight & Light System
 
-**Goal:** Player controls their light source, creating a risk/reward loop between visibility and battery management.
+**Goal:** Player controls their light source (visibility tool only, not sanity protection), creating a risk/reward loop between visibility and battery management.
 
 **Dependencies:** Phase 1 (Battery attribute), Phase 2 (Light detection for sanity)
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Core FlashlightComponent with toggle input and GAS battery drain
+- [ ] 03-02-PLAN.md — Visual polish: warm-up fade-in, low-battery flicker, death sequence, sprint sway
 
 **Requirements:**
 - LITE-01: Player has flashlight as primary light source
@@ -83,12 +89,14 @@ Plans:
 - LITE-04: Being in flashlight cone counts as "in light" for sanity
 - LITE-05: Flashlight dims/flickers as battery depletes
 
+**Note on LITE-04:** Per 03-CONTEXT.md decision, flashlight does NOT protect sanity - it's a visibility tool only. This requirement is superseded by the context decision. Environmental lights remain the only sanity protection.
+
 **Success Criteria:**
 1. Player can press F to toggle flashlight on/off
 2. Flashlight beam illuminates dark areas realistically (Lumen)
 3. Battery percentage decreases visibly on HUD while flashlight is active
-4. Sanity stabilizes/recovers when flashlight is on and pointed at ground ahead
-5. Flashlight flickers and dims noticeably when battery drops below 20%
+4. Flashlight flickers and dims noticeably when battery drops below 10%
+5. Flashlight has warm-up fade-in (~0.5s) and dramatic death sequence (~1.5s)
 
 ---
 
@@ -271,8 +279,8 @@ Plans:
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
 | 1 | Core Attributes (GAS Foundation) | 6 | Complete |
-| 2 | Sanity & Perception | 5 | Planned |
-| 3 | Flashlight & Light System | 5 | Pending |
+| 2 | Sanity & Perception | 5 | Complete |
+| 3 | Flashlight & Light System | 5 | Planned |
 | 4 | Consumables & Inventory | 8 | Pending |
 | 5 | Investigation System | 8 | Pending |
 | 6 | Hallucination System | 7 | Pending |
@@ -315,3 +323,4 @@ Phase 1 (GAS Foundation)
 *Coverage: 62/62 v1 requirements mapped*
 *Phase 1 planned: 2026-01-20*
 *Phase 2 planned: 2026-01-20*
+*Phase 3 planned: 2026-01-21*
