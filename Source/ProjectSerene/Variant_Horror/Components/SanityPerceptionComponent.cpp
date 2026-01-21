@@ -10,6 +10,9 @@
 #include "Engine/PointLight.h"
 #include "Engine/SpotLight.h"
 #include "Engine/Light.h"
+#include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
+#include "EngineUtils.h"
 #include "Camera/CameraComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameplayEffectTypes.h"
@@ -86,49 +89,61 @@ void USanityPerceptionComponent::CacheLightActors()
 		return;
 	}
 
-	// Get all light actors (Point and Spot lights)
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(World, ALight::StaticClass(), FoundActors);
+	AActor* OwnerActor = GetOwner();
 
-	for (AActor* Actor : FoundActors)
+	// Iterate through all actors and find those with point or spot light components
+	// This catches both traditional ALight actors AND generic actors with light components
+	for (TActorIterator<AActor> It(World); It; ++It)
 	{
+		AActor* Actor = *It;
+
+		// Skip the owner (player character) - their flashlight should not provide protection
+		if (Actor == OwnerActor)
+		{
+			continue;
+		}
+
 		// Filter out flickering lights - they provide no sanity protection
 		if (Actor->ActorHasTag(FlickeringLightTag))
 		{
 			continue;
 		}
 
-		// Only include Point and Spot lights (not directional/ambient)
-		if (Cast<APointLight>(Actor) || Cast<ASpotLight>(Actor))
+		// Check if actor has a point light or spot light component
+		bool bHasProtectiveLight = false;
+
+		// Check for PointLightComponent
+		if (Actor->FindComponentByClass<UPointLightComponent>())
+		{
+			bHasProtectiveLight = true;
+		}
+		// Check for SpotLightComponent
+		else if (Actor->FindComponentByClass<USpotLightComponent>())
+		{
+			bHasProtectiveLight = true;
+		}
+		// Check for ProtectiveLight tag (windows, moonlight zones, etc.)
+		else if (Actor->ActorHasTag(ProtectiveLightTag))
+		{
+			bHasProtectiveLight = true;
+		}
+
+		if (bHasProtectiveLight)
 		{
 			LightActors.Add(Actor);
 		}
 	}
 
-	// Also find any actors tagged as protective light sources (windows, moonlight zones)
-	TArray<AActor*> TaggedLightActors;
-	UGameplayStatics::GetAllActorsWithTag(World, ProtectiveLightTag, TaggedLightActors);
+	UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Cached %d protective light sources (excluding owner)"), LightActors.Num());
 
-	for (AActor* Actor : TaggedLightActors)
+	// Log each cached light for debugging
+	for (int32 i = 0; i < LightActors.Num(); ++i)
 	{
-		// Don't add duplicates (some lights might already be in the list)
-		bool bAlreadyAdded = false;
-		for (const TWeakObjectPtr<AActor>& Existing : LightActors)
+		if (AActor* LightActor = LightActors[i].Get())
 		{
-			if (Existing.Get() == Actor)
-			{
-				bAlreadyAdded = true;
-				break;
-			}
-		}
-
-		if (!bAlreadyAdded)
-		{
-			LightActors.Add(Actor);
+			UE_LOG(LogTemp, Log, TEXT("  [%d] %s at %s"), i, *LightActor->GetName(), *LightActor->GetActorLocation().ToString());
 		}
 	}
-
-	UE_LOG(LogTemp, Verbose, TEXT("SanityPerceptionComponent: Cached %d protective light sources"), LightActors.Num());
 }
 
 void USanityPerceptionComponent::CheckLightProximity()
@@ -142,7 +157,7 @@ void USanityPerceptionComponent::CheckLightProximity()
 	const FVector PlayerLocation = Owner->GetActorLocation();
 	bool bFoundLightInRange = false;
 
-	// Check distance to each cached light actor
+	// Check each cached light actor for actual illumination
 	for (int32 i = LightActors.Num() - 1; i >= 0; --i)
 	{
 		AActor* LightActor = LightActors[i].Get();
@@ -154,11 +169,11 @@ void USanityPerceptionComponent::CheckLightProximity()
 			continue;
 		}
 
-		const float Distance = FVector::Dist(PlayerLocation, LightActor->GetActorLocation());
-		if (Distance <= LightDetectionRadius)
+		// Check if player is actually illuminated by this light (cone + occlusion)
+		if (IsIlluminatedByLight(LightActor, PlayerLocation))
 		{
 			bFoundLightInRange = true;
-			break;  // Only need one light in range
+			break;  // Only need one light illuminating us
 		}
 	}
 
@@ -174,9 +189,131 @@ void USanityPerceptionComponent::CheckLightProximity()
 	{
 		if (bInLight && !bInGracePeriod)
 		{
+			// Was in light, now leaving - start grace period
 			OnExitLight();
 		}
+		else if (!bInLight && !bInGracePeriod && !DrainHandle.IsValid())
+		{
+			// Never was in light and drain not active - start draining immediately
+			// This handles the case where player spawns in darkness
+			UE_LOG(LogTemp, Log, TEXT("SanityPerceptionComponent: Player in darkness (no nearby lights), starting sanity drain"));
+			StartSanityDrain();
+		}
 	}
+}
+
+bool USanityPerceptionComponent::IsIlluminatedByLight(AActor* LightActor, const FVector& PlayerLocation) const
+{
+	if (!LightActor)
+	{
+		return false;
+	}
+
+	// For actors with ProtectiveLight tag (non-light sources), use simple distance check
+	if (LightActor->ActorHasTag(ProtectiveLightTag))
+	{
+		const float Distance = FVector::Dist(PlayerLocation, LightActor->GetActorLocation());
+		return Distance <= LightDetectionRadius;
+	}
+
+	// Try to find a spot light component first
+	USpotLightComponent* SpotLight = LightActor->FindComponentByClass<USpotLightComponent>();
+	if (SpotLight)
+	{
+		// Get the light's position and direction
+		const FVector LightLocation = SpotLight->GetComponentLocation();
+		const FVector LightForward = SpotLight->GetForwardVector();
+
+		// Check distance against attenuation radius
+		const float Distance = FVector::Dist(PlayerLocation, LightLocation);
+		const float AttenuationRadius = SpotLight->AttenuationRadius;
+
+		if (Distance > AttenuationRadius)
+		{
+			return false;  // Too far from light
+		}
+
+		// Check if player is within the spot light cone
+		const FVector ToPlayer = (PlayerLocation - LightLocation).GetSafeNormal();
+		const float DotProduct = FVector::DotProduct(LightForward, ToPlayer);
+		const float AngleToPlayer = FMath::Acos(DotProduct);  // Radians
+
+		// Use outer cone angle (full light cone)
+		const float OuterConeAngleRad = FMath::DegreesToRadians(SpotLight->OuterConeAngle);
+
+		if (AngleToPlayer > OuterConeAngleRad)
+		{
+			return false;  // Player is outside the light cone
+		}
+
+		// Cone check passed, now check occlusion
+		if (bCheckLightOcclusion)
+		{
+			FHitResult HitResult;
+			FCollisionQueryParams QueryParams;
+			QueryParams.AddIgnoredActor(GetOwner());  // Ignore player
+			QueryParams.AddIgnoredActor(LightActor);  // Ignore light actor
+
+			bool bHit = GetWorld()->LineTraceSingleByChannel(
+				HitResult,
+				LightLocation,
+				PlayerLocation,
+				OcclusionTraceChannel,
+				QueryParams
+			);
+
+			if (bHit)
+			{
+				return false;  // Something is blocking the light
+			}
+		}
+
+		return true;  // Player is illuminated by this spot light
+	}
+
+	// Try point light component
+	UPointLightComponent* PointLight = LightActor->FindComponentByClass<UPointLightComponent>();
+	if (PointLight)
+	{
+		const FVector LightLocation = PointLight->GetComponentLocation();
+
+		// Check distance against attenuation radius
+		const float Distance = FVector::Dist(PlayerLocation, LightLocation);
+		const float AttenuationRadius = PointLight->AttenuationRadius;
+
+		if (Distance > AttenuationRadius)
+		{
+			return false;  // Too far from light
+		}
+
+		// Point lights have no cone, just check occlusion
+		if (bCheckLightOcclusion)
+		{
+			FHitResult HitResult;
+			FCollisionQueryParams QueryParams;
+			QueryParams.AddIgnoredActor(GetOwner());  // Ignore player
+			QueryParams.AddIgnoredActor(LightActor);  // Ignore light actor
+
+			bool bHit = GetWorld()->LineTraceSingleByChannel(
+				HitResult,
+				LightLocation,
+				PlayerLocation,
+				OcclusionTraceChannel,
+				QueryParams
+			);
+
+			if (bHit)
+			{
+				return false;  // Something is blocking the light
+			}
+		}
+
+		return true;  // Player is illuminated by this point light
+	}
+
+	// No recognized light component, fall back to simple distance check
+	const float Distance = FVector::Dist(PlayerLocation, LightActor->GetActorLocation());
+	return Distance <= LightDetectionRadius;
 }
 
 void USanityPerceptionComponent::OnEnterLight()

@@ -19,14 +19,15 @@ struct FOnAttributeChangeData;
  *
  * Manages sanity drain/regeneration based on light proximity.
  * Attached to HorrorCharacter, this component:
- * - Detects proximity to protective light sources
+ * - Detects proximity to protective light sources (any actor with PointLightComponent or SpotLightComponent)
  * - Applies sanity drain Gameplay Effect when in darkness
  * - Applies sanity regen Gameplay Effect when in light (capped at 80%)
  * - Implements grace period when leaving light before drain starts
  *
  * Light detection is proximity-based, not ambient sampling.
- * Flickering lights provide no protection.
- * The player's flashlight does NOT provide sanity protection.
+ * Flickering lights (tagged with FlickeringLightTag) provide no protection.
+ * The player's own actor is excluded - their flashlight does NOT provide sanity protection.
+ * Use ProtectiveLightTag on any actor to make it a sanity-restoring zone (windows, moonlight areas).
  */
 UCLASS(ClassGroup=(Horror), meta=(BlueprintSpawnableComponent))
 class PROJECTSERENE_API USanityPerceptionComponent : public UActorComponent
@@ -44,7 +45,7 @@ protected:
 	// Light Detection Configuration
 	// ----------------------------------------
 
-	/** Radius for light detection (cm) - approximately 5-6 meters */
+	/** Fallback radius for ProtectiveLight tagged actors that aren't actual lights (cm) */
 	UPROPERTY(EditDefaultsOnly, Category = "Light Detection")
 	float LightDetectionRadius = 550.0f;
 
@@ -63,6 +64,14 @@ protected:
 	/** Tag that marks any actor as a protective light source (windows, moonlight) */
 	UPROPERTY(EditDefaultsOnly, Category = "Light Detection")
 	FName ProtectiveLightTag = FName("ProtectiveLight");
+
+	/** If true, use line traces to check if light is blocked by geometry (walls, floors) */
+	UPROPERTY(EditDefaultsOnly, Category = "Light Detection")
+	bool bCheckLightOcclusion = true;
+
+	/** Collision channel to use for light occlusion traces */
+	UPROPERTY(EditDefaultsOnly, Category = "Light Detection")
+	TEnumAsByte<ECollisionChannel> OcclusionTraceChannel = ECC_Visibility;
 
 	// ----------------------------------------
 	// GAS Effect Classes
@@ -176,6 +185,9 @@ private:
 
 	/** Periodic check for light proximity - called every LightCheckInterval */
 	void CheckLightProximity();
+
+	/** Check if player is actually illuminated by a specific light (cone + occlusion) */
+	bool IsIlluminatedByLight(AActor* LightActor, const FVector& PlayerLocation) const;
 
 	/** Called when player enters a light zone */
 	void OnEnterLight();
