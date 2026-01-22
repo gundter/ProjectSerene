@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 4 - Consumables & Inventory - IN PROGRESS. Inventory infrastructure complete (ItemDataAsset, InventoryComponent with GAS integration). Plan 04-01 done, ready for 04-02 pickup system.
+**Current Focus:** Phase 4 - Consumables & Inventory - COMPLETE. Inventory infrastructure and pickup system implemented. Ready for Phase 5 (Investigation System).
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -18,16 +18,16 @@
 
 ## Current Position
 
-**Phase:** 4 of 10 (Consumables & Inventory) - IN PROGRESS
-**Plan:** 1 of 2 complete
-**Status:** Plan 04-01 complete, ready for 04-02
+**Phase:** 4 of 10 (Consumables & Inventory) - COMPLETE
+**Plan:** 2 of 2 complete
+**Status:** Phase 4 complete, ready for Phase 5
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
 Phase 2  [###] Sanity & Perception - COMPLETE
 Phase 3  [##] Flashlight & Light System - COMPLETE
-Phase 4  [#.] Consumables & Inventory - IN PROGRESS (1/2)
+Phase 4  [##] Consumables & Inventory - COMPLETE
 Phase 5  [ ] Investigation System
 Phase 6  [ ] Hallucination System
 Phase 7  [ ] AI & Enemies
@@ -35,7 +35,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [#########.] 9/~30 plans complete (~30%)
+Overall: [##########] 10/~30 plans complete (~33%)
 ```
 
 ---
@@ -44,9 +44,9 @@ Overall: [#########.] 9/~30 plans complete (~30%)
 
 | Metric | Value |
 |--------|-------|
-| Phases Complete | 3/10 |
-| Plans Executed | 9 |
-| Last Plan Duration | ~7 min |
+| Phases Complete | 4/10 |
+| Plans Executed | 10 |
+| Last Plan Duration | ~5 min |
 | Blockers Encountered | 0 |
 
 ---
@@ -89,6 +89,10 @@ Overall: [#########.] 9/~30 plans complete (~30%)
 | UPrimaryDataAsset for items | Enables Asset Manager integration and organized asset discovery | 2026-01-22 |
 | TMap with UPROPERTY for inventory | Prevents garbage collection issues with UObject keys | 2026-01-22 |
 | MatchesTag for category filtering | Hierarchical matching supports Item.Consumable matching Medical/Tool | 2026-01-22 |
+| Timer-based interaction checking | 0.1s interval balances responsiveness with performance | 2026-01-22 |
+| GetPlayerViewPoint for line trace | Uses camera location and rotation directly for first-person accuracy | 2026-01-22 |
+| WeakObjectPtr for CurrentInteractable | Safe reference that auto-clears if actor is destroyed | 2026-01-22 |
+| Custom depth stencil for highlight | Standard value 255 for post-process outline detection | 2026-01-22 |
 
 ### Technical Notes
 
@@ -109,6 +113,7 @@ Overall: [#########.] 9/~30 plans complete (~30%)
 - **Light detection:** Cone + occlusion validation, excludes player flashlight
 - **Flashlight system:** FlashlightComponent with full state machine (Off, WarmingUp, On, Flickering, DyingOut), GAS battery drain, State.FlashlightOn tag, timeline-driven curves, Perlin noise flicker, sprint sway
 - **Inventory system:** InventoryComponent on PlayerState with TMap storage, ItemDataAsset for item definitions, Item.* gameplay tags for categorization
+- **Interaction system:** IInteractableTarget interface, timer-based line trace detection, custom depth highlight, ConsumablePickup actor
 
 ### Patterns Established (Phase 1 + Phase 2 + Phase 3 + Phase 4)
 
@@ -136,6 +141,9 @@ Overall: [#########.] 9/~30 plans complete (~30%)
 - **Item effect application:** ASC->MakeOutgoingSpec + ApplyGameplayEffectSpecToSelf pattern
 - **OnInventoryChanged delegate:** UI binding for inventory updates
 - **Quick slot array pattern:** Fixed size array with NUM_QUICK_SLOTS constant
+- **IInteractableTarget interface:** Execute_* static methods for calling interface methods
+- **Timer-based interaction checking:** FTimerHandle with looping timer at 0.1s interval
+- **Focus state management:** OnFocused/OnUnfocused pair for highlight control
 
 ### Research Flags
 
@@ -150,15 +158,15 @@ Overall: [#########.] 9/~30 plans complete (~30%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-22: Completed 04-01 Inventory Infrastructure
-- ItemDataAsset for editor-friendly item definitions
-- InventoryComponent with GAS integration for applying item effects
-- Item.Consumable.*, Item.Evidence gameplay tags registered
-- InventoryComponent integrated into SerenePlayerState
+- 2026-01-22: Completed 04-02 Pickup System
+- IInteractableTarget interface for world object interaction
+- ConsumablePickup actor with inventory integration
+- Timer-based line trace detection on HorrorPlayerController
+- Interaction prompt UI forwarding to HorrorUI
 
 ### Next Session
-- Execute 04-02 Pickup System
-- Or execute remaining Phase 4 plans
+- Execute Phase 5 (Investigation System)
+- Or configure Blueprint assets for Phase 4
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -197,8 +205,17 @@ Overall: [#########.] 9/~30 plans complete (~30%)
 - [x] Create InventoryComponent with GAS integration (04-01)
 - [x] Add Item.Consumable.*, Item.Evidence gameplay tags (04-01)
 - [x] Integrate InventoryComponent into SerenePlayerState (04-01)
+- [x] Create IInteractableTarget interface (04-02)
+- [x] Create ConsumablePickup actor (04-02)
+- [x] Add interaction detection to HorrorPlayerController (04-02)
+- [ ] **USER:** Create IA_Interact Input Action in Editor
+- [ ] **USER:** Add IA_Interact to IMC_Horror (bound to E key)
+- [ ] **USER:** Configure BP_HorrorPlayerController InteractAction property
+- [ ] **USER:** Implement interaction prompt in BP_HorrorUI
+- [ ] **USER:** Create BP_ConsumablePickup Blueprints
 - [ ] **USER:** Create item data assets (DA_Bandage, DA_Battery, etc.)
 - [ ] **USER:** Create item Gameplay Effects (GE_UseBandage, GE_UseBattery)
+- [ ] **USER:** Set up outline post-process material
 
 ---
 
@@ -211,4 +228,4 @@ None currently.
 *State initialized: 2026-01-19*
 *Last updated: 2026-01-22*
 *Phase 3 complete: 2026-01-21*
-*Plan 04-01 complete: 2026-01-22*
+*Phase 4 complete: 2026-01-22*
