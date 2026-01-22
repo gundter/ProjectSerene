@@ -81,3 +81,17 @@ void UItemSlotWidget::HandleButtonClicked()
 		OnItemSlotClicked.Broadcast(CurrentItem);
 	}
 }
+
+FReply UItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	// Detect right-click for quick slot assignment
+	if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+	{
+		if (CurrentItem)
+		{
+			OnItemSlotRightClicked.Broadcast(CurrentItem);
+			return FReply::Handled();
+		}
+	}
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}

@@ -120,3 +120,21 @@ void UInventoryWidget::OnItemSlotClicked(UItemDataAsset* Item)
 		// Inventory changed delegate will trigger refresh
 	}
 }
+
+void UInventoryWidget::OnItemSlotRightClicked(UItemDataAsset* Item)
+{
+	if (Item)
+	{
+		// Show the quick slot assignment UI (Blueprint implements the popup)
+		ShowQuickSlotAssignmentUI(Item);
+	}
+}
+
+void UInventoryWidget::AssignToQuickSlot(UItemDataAsset* Item, int32 SlotIndex)
+{
+	if (InventoryComponent.IsValid() && Item)
+	{
+		InventoryComponent->AssignQuickSlot(SlotIndex, Item);
+		// Visual feedback could be triggered here if desired
+	}
+}

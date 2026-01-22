@@ -12,6 +12,7 @@ class UTextBlock;
 class UButton;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemSlotClicked, UItemDataAsset*, Item);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemSlotRightClicked, UItemDataAsset*, Item);
 
 /**
  * UItemSlotWidget
@@ -51,9 +52,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory|UI")
 	int32 GetQuantity() const { return CurrentQuantity; }
 
-	/** Delegate fired when slot is clicked */
+	/** Delegate fired when slot is clicked (left click - use item) */
 	UPROPERTY(BlueprintAssignable, Category = "Inventory|UI")
 	FOnItemSlotClicked OnItemSlotClicked;
+
+	/** Delegate fired when slot is right-clicked (assign to quick slot) */
+	UPROPERTY(BlueprintAssignable, Category = "Inventory|UI")
+	FOnItemSlotRightClicked OnItemSlotRightClicked;
 
 protected:
 	// ----------------------------------------
@@ -82,6 +87,7 @@ protected:
 	int32 CurrentQuantity = 0;
 
 	virtual void NativeConstruct() override;
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 	UFUNCTION()
 	void HandleButtonClicked();

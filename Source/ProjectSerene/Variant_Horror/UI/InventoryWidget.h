@@ -54,6 +54,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory|UI")
 	int32 GetCurrentCategoryIndex() const { return CurrentCategoryIndex; }
 
+	// ----------------------------------------
+	// Quick Slot Assignment
+	// ----------------------------------------
+
+	/** Assign an item to a quick slot (called from context menu or drag-drop) */
+	UFUNCTION(BlueprintCallable, Category = "Inventory|UI")
+	void AssignToQuickSlot(UItemDataAsset* Item, int32 SlotIndex);
+
+	/** BlueprintImplementableEvent for showing quick slot assignment UI */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Inventory|UI")
+	void ShowQuickSlotAssignmentUI(UItemDataAsset* Item);
+
 protected:
 	// ----------------------------------------
 	// Widget Bindings
@@ -118,6 +130,10 @@ protected:
 	/** Handle item slot clicked - uses item via InventoryComponent */
 	UFUNCTION()
 	void OnItemSlotClicked(UItemDataAsset* Item);
+
+	/** Handle item slot right-clicked - shows quick slot assignment UI */
+	UFUNCTION()
+	void OnItemSlotRightClicked(UItemDataAsset* Item);
 
 	/** Populate a TileView with items matching category tag */
 	void PopulateTileView(UTileView* TileView, FGameplayTag CategoryTag);
