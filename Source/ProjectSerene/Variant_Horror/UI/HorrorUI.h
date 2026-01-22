@@ -58,6 +58,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Horror|Sanity")
 	void UpdateSanityWarning(float SanityPercent, bool bShowWarning);
 
+	// ----------------------------------------
+	// Interaction Prompt
+	// ----------------------------------------
+
+	/** Show interaction prompt with specified text */
+	UFUNCTION(BlueprintCallable, Category = "Horror|Interaction")
+	void ShowInteractionPrompt(const FText& Prompt);
+
+	/** Hide interaction prompt */
+	UFUNCTION(BlueprintCallable, Category = "Horror|Interaction")
+	void HideInteractionPrompt();
+
 	/** Show attribute bar with auto-fade (bar name identifies which bar to show) */
 	UFUNCTION(BlueprintCallable, Category = "Horror|Attributes")
 	void ShowAttributeBar(FName BarName);
@@ -107,6 +119,14 @@ protected:
 	/** Called when sanity warning state changes (implement in Blueprint for icon animation) */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Horror|Sanity", meta = (DisplayName = "Sanity Warning Updated"))
 	void BP_SanityWarningUpdated(float SanityPercent, bool bShowWarning);
+
+	/** Called to show interaction prompt (implement in Blueprint for text display) */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Horror|Interaction", meta = (DisplayName = "Show Interaction Prompt"))
+	void BP_ShowInteractionPrompt(const FText& Prompt);
+
+	/** Called to hide interaction prompt (implement in Blueprint) */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Horror|Interaction", meta = (DisplayName = "Hide Interaction Prompt"))
+	void BP_HideInteractionPrompt();
 
 	// ----------------------------------------
 	// Configuration

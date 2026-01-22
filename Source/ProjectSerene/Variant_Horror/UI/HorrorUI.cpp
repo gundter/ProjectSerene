@@ -68,3 +68,19 @@ void UHorrorUI::OnSprintStateChanged(bool bSprinting)
 	// Legacy callback from Character delegate
 	BP_SprintStateChanged(bSprinting);
 }
+
+// ----------------------------------------
+// Interaction Prompt
+// ----------------------------------------
+
+void UHorrorUI::ShowInteractionPrompt(const FText& Prompt)
+{
+	// Forward to Blueprint for actual text display
+	BP_ShowInteractionPrompt(Prompt);
+}
+
+void UHorrorUI::HideInteractionPrompt()
+{
+	// Forward to Blueprint to hide the prompt
+	BP_HideInteractionPrompt();
+}

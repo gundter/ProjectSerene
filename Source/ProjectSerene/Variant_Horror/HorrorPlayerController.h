@@ -7,6 +7,7 @@
 #include "HorrorPlayerController.generated.h"
 
 class UInputMappingContext;
+class UInputAction;
 class UHorrorUI;
 class ASerenePlayerState;
 struct FOnAttributeChangeData;
@@ -87,6 +88,41 @@ protected:
 	void OnStaminaChanged(const FOnAttributeChangeData& Data);
 	void OnSanityChanged(const FOnAttributeChangeData& Data);
 	void OnBatteryChanged(const FOnAttributeChangeData& Data);
+
+	// ----------------------------------------
+	// Interaction System
+	// ----------------------------------------
+
+	/** Input action for interaction (E key) */
+	UPROPERTY(EditDefaultsOnly, Category = "Horror|Input")
+	TObjectPtr<UInputAction> InteractAction;
+
+	/** Maximum distance for interaction detection */
+	UPROPERTY(EditDefaultsOnly, Category = "Horror|Interaction")
+	float InteractionRange = 300.0f;
+
+	/** Timer interval for interaction checking (performance) */
+	UPROPERTY(EditDefaultsOnly, Category = "Horror|Interaction")
+	float InteractionCheckInterval = 0.1f;
+
+	/** Currently focused interactable actor */
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CurrentInteractable;
+
+	/** Handle for interaction check timer */
+	FTimerHandle InteractionCheckTimerHandle;
+
+	/** Start periodic interaction checking */
+	void StartInteractionChecking();
+
+	/** Stop periodic interaction checking */
+	void StopInteractionChecking();
+
+	/** Check for interactable object via line trace */
+	void CheckForInteractable();
+
+	/** Handle interact input */
+	void OnInteractPressed();
 
 private:
 	/** Tracks whether sanity warning is currently active (for edge detection) */

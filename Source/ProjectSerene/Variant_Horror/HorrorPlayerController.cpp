@@ -3,18 +3,24 @@
 
 #include "Variant_Horror/HorrorPlayerController.h"
 #include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
+#include "InputAction.h"
 #include "ProjectSereneCameraManager.h"
 #include "HorrorCharacter.h"
 #include "HorrorUI.h"
 #include "ProjectSerene.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+#include "TimerManager.h"
 
 // GAS includes for attribute listeners
 #include "AbilitySystemComponent.h"
 #include "Player/SerenePlayerState.h"
 #include "GAS/SereneAttributeSet.h"
+
+// Interaction system includes
+#include "Inventory/InteractableInterface.h"
 
 AHorrorPlayerController::AHorrorPlayerController()
 {
@@ -43,6 +49,12 @@ void AHorrorPlayerController::BeginPlay()
 
 		}
 
+	}
+
+	// Start periodic interaction checking for local player
+	if (IsLocalPlayerController())
+	{
+		StartInteractionChecking();
 	}
 }
 
@@ -75,7 +87,7 @@ void AHorrorPlayerController::OnPossess(APawn* aPawn)
 void AHorrorPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	
+
 	// only add IMCs for local player controllers
 	if (IsLocalPlayerController())
 	{
@@ -96,7 +108,16 @@ void AHorrorPlayerController::SetupInputComponent()
 				}
 			}
 		}
-	}	
+
+		// Bind interact action
+		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+		{
+			if (InteractAction)
+			{
+				EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AHorrorPlayerController::OnInteractPressed);
+			}
+		}
+	}
 }
 
 bool AHorrorPlayerController::ShouldUseTouchControls() const
@@ -202,4 +223,119 @@ void AHorrorPlayerController::OnBatteryChanged(const FOnAttributeChangeData& Dat
 	float Percent = MaxBattery > 0.0f ? Data.NewValue / MaxBattery : 0.0f;
 
 	HorrorUI->UpdateBatteryBar(Percent);
+}
+
+// ----------------------------------------
+// Interaction System
+// ----------------------------------------
+
+void AHorrorPlayerController::StartInteractionChecking()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			InteractionCheckTimerHandle,
+			this,
+			&AHorrorPlayerController::CheckForInteractable,
+			InteractionCheckInterval,
+			true  // looping
+		);
+	}
+}
+
+void AHorrorPlayerController::StopInteractionChecking()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(InteractionCheckTimerHandle);
+	}
+
+	// Clear any current focus
+	if (CurrentInteractable.IsValid())
+	{
+		APawn* ControlledPawn = GetPawn();
+		if (ControlledPawn)
+		{
+			IInteractableTarget::Execute_OnUnfocused(CurrentInteractable.Get(), ControlledPawn);
+		}
+		CurrentInteractable.Reset();
+	}
+
+	if (HorrorUI)
+	{
+		HorrorUI->HideInteractionPrompt();
+	}
+}
+
+void AHorrorPlayerController::CheckForInteractable()
+{
+	APawn* ControlledPawn = GetPawn();
+	if (!ControlledPawn)
+	{
+		return;
+	}
+
+	// Fire line trace from camera
+	FVector Start;
+	FRotator Rotation;
+	GetPlayerViewPoint(Start, Rotation);
+	FVector End = Start + Rotation.Vector() * InteractionRange;
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(ControlledPawn);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult, Start, End, ECC_Visibility, Params);
+
+	AActor* HitActor = bHit ? HitResult.GetActor() : nullptr;
+
+	// Check if hit actor implements interface
+	IInteractableTarget* NewInteractable = nullptr;
+	if (HitActor)
+	{
+		NewInteractable = Cast<IInteractableTarget>(HitActor);
+	}
+
+	// Handle focus change
+	AActor* NewInteractableActor = NewInteractable ? HitActor : nullptr;
+
+	if (NewInteractableActor != CurrentInteractable.Get())
+	{
+		// Unfocus old
+		if (CurrentInteractable.IsValid())
+		{
+			IInteractableTarget::Execute_OnUnfocused(CurrentInteractable.Get(), ControlledPawn);
+		}
+
+		if (HorrorUI)
+		{
+			HorrorUI->HideInteractionPrompt();
+		}
+
+		// Focus new
+		CurrentInteractable = NewInteractableActor;
+		if (CurrentInteractable.IsValid())
+		{
+			IInteractableTarget::Execute_OnFocused(CurrentInteractable.Get(), ControlledPawn);
+			FText Prompt = IInteractableTarget::Execute_GetInteractionPrompt(CurrentInteractable.Get());
+
+			if (HorrorUI)
+			{
+				HorrorUI->ShowInteractionPrompt(Prompt);
+			}
+		}
+	}
+}
+
+void AHorrorPlayerController::OnInteractPressed()
+{
+	if (CurrentInteractable.IsValid())
+	{
+		APawn* ControlledPawn = GetPawn();
+		if (ControlledPawn)
+		{
+			IInteractableTarget::Execute_OnInteract(CurrentInteractable.Get(), ControlledPawn);
+		}
+	}
 }
