@@ -1,6 +1,6 @@
 # Project State: Project Serene
 
-**Last Updated:** 2026-01-21
+**Last Updated:** 2026-01-22
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 3 - Flashlight & Light System - COMPLETE. Full flashlight system with toggle input, GAS battery drain, warm-up/flicker/death states, sprint sway. Ready for Phase 4.
+**Current Focus:** Phase 4 - Consumables & Inventory - IN PROGRESS. Inventory infrastructure complete (ItemDataAsset, InventoryComponent with GAS integration). Plan 04-01 done, ready for 04-02 pickup system.
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -18,16 +18,16 @@
 
 ## Current Position
 
-**Phase:** 3 of 10 (Flashlight & Light System) - COMPLETE
-**Plan:** 2 of 2 complete
-**Status:** Ready for Phase 4
+**Phase:** 4 of 10 (Consumables & Inventory) - IN PROGRESS
+**Plan:** 1 of 2 complete
+**Status:** Plan 04-01 complete, ready for 04-02
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
 Phase 2  [###] Sanity & Perception - COMPLETE
 Phase 3  [##] Flashlight & Light System - COMPLETE
-Phase 4  [ ] Consumables & Inventory
+Phase 4  [#.] Consumables & Inventory - IN PROGRESS (1/2)
 Phase 5  [ ] Investigation System
 Phase 6  [ ] Hallucination System
 Phase 7  [ ] AI & Enemies
@@ -35,7 +35,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [########..] 8/~30 plans complete (~27%)
+Overall: [#########.] 9/~30 plans complete (~30%)
 ```
 
 ---
@@ -45,8 +45,8 @@ Overall: [########..] 8/~30 plans complete (~27%)
 | Metric | Value |
 |--------|-------|
 | Phases Complete | 3/10 |
-| Plans Executed | 8 |
-| Last Plan Duration | ~4 min |
+| Plans Executed | 9 |
+| Last Plan Duration | ~7 min |
 | Blockers Encountered | 0 |
 
 ---
@@ -85,6 +85,10 @@ Overall: [########..] 8/~30 plans complete (~27%)
 | Perlin noise for flicker | FMath::PerlinNoise1D for organic variation without visible patterns | 2026-01-21 |
 | 10% flicker threshold | Late warning creates tension, matches horror game conventions | 2026-01-21 |
 | Sprint sway in TickComponent | Needs every-frame smoothness for rotation interpolation | 2026-01-21 |
+| InventoryComponent on PlayerState | Follows ASC ownership pattern for persistence across respawns | 2026-01-22 |
+| UPrimaryDataAsset for items | Enables Asset Manager integration and organized asset discovery | 2026-01-22 |
+| TMap with UPROPERTY for inventory | Prevents garbage collection issues with UObject keys | 2026-01-22 |
+| MatchesTag for category filtering | Hierarchical matching supports Item.Consumable matching Medical/Tool | 2026-01-22 |
 
 ### Technical Notes
 
@@ -104,8 +108,9 @@ Overall: [########..] 8/~30 plans complete (~27%)
 - **HUD warning:** Edge-detected sanity warning below 30%, Blueprint animation support
 - **Light detection:** Cone + occlusion validation, excludes player flashlight
 - **Flashlight system:** FlashlightComponent with full state machine (Off, WarmingUp, On, Flickering, DyingOut), GAS battery drain, State.FlashlightOn tag, timeline-driven curves, Perlin noise flicker, sprint sway
+- **Inventory system:** InventoryComponent on PlayerState with TMap storage, ItemDataAsset for item definitions, Item.* gameplay tags for categorization
 
-### Patterns Established (Phase 1 + Phase 2 + Phase 3)
+### Patterns Established (Phase 1 + Phase 2 + Phase 3 + Phase 4)
 
 - ASC on PlayerState, Character as Avatar (IAbilitySystemInterface forwarding)
 - PossessedBy is initialization point for GAS on player characters
@@ -127,6 +132,10 @@ Overall: [########..] 8/~30 plans complete (~27%)
 - **Timeline-component pattern:** NewObject<UTimelineComponent> with curve binding for animations
 - **Perlin noise flicker pattern:** FMath::PerlinNoise1D for organic procedural variation
 - **Sprint sway rotation pattern:** Sinusoidal offset with smooth return interpolation
+- **UPrimaryDataAsset pattern:** GetPrimaryAssetId() returns Type:AssetName format for Asset Manager
+- **Item effect application:** ASC->MakeOutgoingSpec + ApplyGameplayEffectSpecToSelf pattern
+- **OnInventoryChanged delegate:** UI binding for inventory updates
+- **Quick slot array pattern:** Fixed size array with NUM_QUICK_SLOTS constant
 
 ### Research Flags
 
@@ -141,15 +150,15 @@ Overall: [########..] 8/~30 plans complete (~27%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-21: Completed Phase 3 - Flashlight & Light System
-- 03-01: Core FlashlightComponent with GAS battery drain, State.FlashlightOn tag
-- 03-02: Visual polish - warm-up fade-in, Perlin noise flicker, death sequence, sprint sway
-- Phase verified: 9/9 must-haves confirmed in codebase
-- **Blueprint configuration required:** See SUMMARY files for Input Action, Gameplay Effect, Float Curves
+- 2026-01-22: Completed 04-01 Inventory Infrastructure
+- ItemDataAsset for editor-friendly item definitions
+- InventoryComponent with GAS integration for applying item effects
+- Item.Consumable.*, Item.Evidence gameplay tags registered
+- InventoryComponent integrated into SerenePlayerState
 
 ### Next Session
-- Plan Phase 4 (Consumables & Inventory)
-- Or execute Phase 4 if already planned
+- Execute 04-02 Pickup System
+- Or execute remaining Phase 4 plans
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -184,6 +193,12 @@ Overall: [########..] 8/~30 plans complete (~27%)
 - [ ] **USER:** Configure BP_HorrorCharacter with flashlight settings and curves
 - [ ] **USER:** Runtime test flashlight toggle, battery drain, warm-up, flicker, death
 - [ ] **OPTIONAL:** Create MS_SanityDistortion MetaSound asset for audio
+- [x] Create ItemDataAsset class (04-01)
+- [x] Create InventoryComponent with GAS integration (04-01)
+- [x] Add Item.Consumable.*, Item.Evidence gameplay tags (04-01)
+- [x] Integrate InventoryComponent into SerenePlayerState (04-01)
+- [ ] **USER:** Create item data assets (DA_Bandage, DA_Battery, etc.)
+- [ ] **USER:** Create item Gameplay Effects (GE_UseBandage, GE_UseBattery)
 
 ---
 
@@ -194,5 +209,6 @@ None currently.
 ---
 
 *State initialized: 2026-01-19*
-*Last updated: 2026-01-21*
+*Last updated: 2026-01-22*
 *Phase 3 complete: 2026-01-21*
+*Plan 04-01 complete: 2026-01-22*
