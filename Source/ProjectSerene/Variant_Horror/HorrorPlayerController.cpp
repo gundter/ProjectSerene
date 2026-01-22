@@ -25,6 +25,7 @@
 
 // Inventory UI includes
 #include "UI/InventoryWidget.h"
+#include "UI/RadialMenuWidget.h"
 #include "Kismet/GameplayStatics.h"
 
 AHorrorPlayerController::AHorrorPlayerController()
@@ -102,6 +103,23 @@ void AHorrorPlayerController::OnPossess(APawn* aPawn)
 					}
 				}
 			}
+
+			// Create radial menu widget (hidden by default)
+			if (RadialMenuWidgetClass && !RadialMenuWidget)
+			{
+				RadialMenuWidget = CreateWidget<URadialMenuWidget>(this, RadialMenuWidgetClass);
+				if (RadialMenuWidget)
+				{
+					RadialMenuWidget->AddToViewport(15); // Higher ZOrder than inventory
+					RadialMenuWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+					// Initialize with inventory component from PlayerState
+					if (ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>())
+					{
+						RadialMenuWidget->SetInventoryComponent(PS->GetInventoryComponent());
+					}
+				}
+			}
 		}
 	}
 }
@@ -141,6 +159,10 @@ void AHorrorPlayerController::SetupInputComponent()
 			if (ToggleInventoryAction)
 			{
 				EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &AHorrorPlayerController::ToggleInventory);
+			}
+			if (ToggleRadialMenuAction)
+			{
+				EnhancedInputComponent->BindAction(ToggleRadialMenuAction, ETriggerEvent::Started, this, &AHorrorPlayerController::ToggleRadialMenu);
 			}
 		}
 	}
@@ -411,6 +433,51 @@ void AHorrorPlayerController::CloseInventory()
 	UGameplayStatics::SetGamePaused(GetWorld(), false);
 
 	// Return to game input mode
+	SetInputMode(FInputModeGameOnly());
+	bShowMouseCursor = false;
+}
+
+// ----------------------------------------
+// Radial Menu UI
+// ----------------------------------------
+
+void AHorrorPlayerController::ToggleRadialMenu()
+{
+	// Don't open radial if full inventory is open
+	if (bInventoryOpen) return;
+
+	if (RadialMenuWidget && RadialMenuWidget->IsMenuVisible())
+	{
+		CloseRadialMenu();
+	}
+	else
+	{
+		OpenRadialMenu();
+	}
+}
+
+void AHorrorPlayerController::OpenRadialMenu()
+{
+	if (!RadialMenuWidget) return;
+
+	RadialMenuWidget->ShowMenu();
+
+	// Use Game and UI input mode - game continues, but can click menu
+	// Per CONTEXT.md: radial does NOT pause
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(RadialMenuWidget->TakeWidget());
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+}
+
+void AHorrorPlayerController::CloseRadialMenu()
+{
+	if (!RadialMenuWidget) return;
+
+	RadialMenuWidget->HideMenu();
+
+	// Return to game-only input
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
 }

@@ -19,7 +19,7 @@
 ## Current Position
 
 **Phase:** 4 of 10 (Consumables & Inventory) - COMPLETE
-**Plan:** 2 of 2 complete
+**Plan:** 3 of 3 complete
 **Status:** Phase 4 complete, ready for Phase 5
 
 **Progress:**
@@ -27,7 +27,7 @@
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
 Phase 2  [###] Sanity & Perception - COMPLETE
 Phase 3  [##] Flashlight & Light System - COMPLETE
-Phase 4  [##] Consumables & Inventory - COMPLETE
+Phase 4  [###] Consumables & Inventory - COMPLETE
 Phase 5  [ ] Investigation System
 Phase 6  [ ] Hallucination System
 Phase 7  [ ] AI & Enemies
@@ -35,7 +35,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [##########] 10/~30 plans complete (~33%)
+Overall: [###########] 11/~30 plans complete (~37%)
 ```
 
 ---
@@ -45,7 +45,7 @@ Overall: [##########] 10/~30 plans complete (~33%)
 | Metric | Value |
 |--------|-------|
 | Phases Complete | 4/10 |
-| Plans Executed | 10 |
+| Plans Executed | 11 |
 | Last Plan Duration | ~5 min |
 | Blockers Encountered | 0 |
 
@@ -93,6 +93,10 @@ Overall: [##########] 10/~30 plans complete (~33%)
 | GetPlayerViewPoint for line trace | Uses camera location and rotation directly for first-person accuracy | 2026-01-22 |
 | WeakObjectPtr for CurrentInteractable | Safe reference that auto-clears if actor is destroyed | 2026-01-22 |
 | Custom depth stencil for highlight | Standard value 255 for post-process outline detection | 2026-01-22 |
+| SetInventoryComponent vs Initialize | Avoid hiding UUserWidget::Initialize() virtual method | 2026-01-22 |
+| InventoryWidget ZOrder 10 | Higher than HorrorUI (0) to ensure inventory layers on top | 2026-01-22 |
+| Collapsed visibility for hidden widgets | ESlateVisibility::Collapsed removes from layout; cleaner than Hidden | 2026-01-22 |
+| FInputModeUIOnly for inventory | Game pauses, cursor shows, widget takes focus | 2026-01-22 |
 
 ### Technical Notes
 
@@ -114,6 +118,7 @@ Overall: [##########] 10/~30 plans complete (~33%)
 - **Flashlight system:** FlashlightComponent with full state machine (Off, WarmingUp, On, Flickering, DyingOut), GAS battery drain, State.FlashlightOn tag, timeline-driven curves, Perlin noise flicker, sprint sway
 - **Inventory system:** InventoryComponent on PlayerState with TMap storage, ItemDataAsset for item definitions, Item.* gameplay tags for categorization
 - **Interaction system:** IInteractableTarget interface, timer-based line trace detection, custom depth highlight, ConsumablePickup actor
+- **Inventory UI:** InventoryWidget with category tabs, ItemSlotWidget for grid display, Tab toggle with game pause
 
 ### Patterns Established (Phase 1 + Phase 2 + Phase 3 + Phase 4)
 
@@ -144,6 +149,10 @@ Overall: [##########] 10/~30 plans complete (~33%)
 - **IInteractableTarget interface:** Execute_* static methods for calling interface methods
 - **Timer-based interaction checking:** FTimerHandle with looping timer at 0.1s interval
 - **Focus state management:** OnFocused/OnUnfocused pair for highlight control
+- **BindWidget pattern:** meta=(BindWidget) for Blueprint widget binding in C++ UserWidgets
+- **Tab toggle pattern:** ToggleInventory/OpenInventory/CloseInventory triplet for modal UI
+- **Game pause pattern:** SetGamePaused + FInputModeUIOnly + bShowMouseCursor for modal inventory
+- **TileView list item pattern:** UObject* (ItemDataAsset) directly as TileView list item
 
 ### Research Flags
 
@@ -158,15 +167,15 @@ Overall: [##########] 10/~30 plans complete (~33%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-22: Completed 04-02 Pickup System
-- IInteractableTarget interface for world object interaction
-- ConsumablePickup actor with inventory integration
-- Timer-based line trace detection on HorrorPlayerController
-- Interaction prompt UI forwarding to HorrorUI
+- 2026-01-22: Completed 04-03 Inventory UI
+- ItemSlotWidget for individual item display with icon and quantity
+- InventoryWidget with Medical/Tools/Evidence category tabs
+- Tab key toggle with game pause and UI input mode
+- Inventory widget integration with InventoryComponent
 
 ### Next Session
 - Execute Phase 5 (Investigation System)
-- Or configure Blueprint assets for Phase 4
+- Or configure Blueprint assets for Phase 4 inventory UI
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -208,6 +217,9 @@ Overall: [##########] 10/~30 plans complete (~33%)
 - [x] Create IInteractableTarget interface (04-02)
 - [x] Create ConsumablePickup actor (04-02)
 - [x] Add interaction detection to HorrorPlayerController (04-02)
+- [x] Create ItemSlotWidget for item display (04-03)
+- [x] Create InventoryWidget with category tabs (04-03)
+- [x] Add inventory toggle to HorrorPlayerController (04-03)
 - [ ] **USER:** Create IA_Interact Input Action in Editor
 - [ ] **USER:** Add IA_Interact to IMC_Horror (bound to E key)
 - [ ] **USER:** Configure BP_HorrorPlayerController InteractAction property
@@ -216,6 +228,11 @@ Overall: [##########] 10/~30 plans complete (~33%)
 - [ ] **USER:** Create item data assets (DA_Bandage, DA_Battery, etc.)
 - [ ] **USER:** Create item Gameplay Effects (GE_UseBandage, GE_UseBattery)
 - [ ] **USER:** Set up outline post-process material
+- [ ] **USER:** Create WBP_ItemSlot widget Blueprint (parent to ItemSlotWidget)
+- [ ] **USER:** Create WBP_Inventory widget Blueprint (parent to InventoryWidget)
+- [ ] **USER:** Create IA_ToggleInventory Input Action (bExecuteWhenPaused = true)
+- [ ] **USER:** Add IA_ToggleInventory to IMC_Horror (bound to Tab key)
+- [ ] **USER:** Configure BP_HorrorPlayerController inventory properties
 
 ---
 
