@@ -8,9 +8,11 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 4 - Consumables & Inventory - In Progress. Radial quick-select menu complete. One plan remaining (04-05).
+**Current Focus:** Phase 4 - Consumables & Inventory - CHECKPOINT. All C++ complete. Awaiting Blueprint setup and runtime verification (04-05 Task 3).
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
+
+**Resume:** `/gsd:execute-phase 4` — continues from checkpoint, type "verified" after testing.
 
 **Reviewer Persona:** Senior Unreal Engine Developer (10+ years experience, shipped multiple AAA titles). Reviews focus on: performance optimization, GAS best practices, memory safety, UE coding standards, Blueprint/C++ boundary design, scalability, and maintainability.
 
@@ -18,9 +20,9 @@
 
 ## Current Position
 
-**Phase:** 4 of 10 (Consumables & Inventory) - In Progress
-**Plan:** 4 of 5 complete
-**Status:** Radial menu complete, 04-05 remaining
+**Phase:** 4 of 10 (Consumables & Inventory) - CHECKPOINT
+**Plan:** 5 of 5 (04-05 at Task 3 checkpoint)
+**Status:** Awaiting Blueprint setup + runtime verification. See 04-BLUEPRINT-CHECKLIST.md
 
 **Progress:**
 ```
