@@ -8,7 +8,7 @@
 
 **Core Value:** The player experiences unreliable perception - they can never fully trust what they see, creating genuine paranoia and tension.
 
-**Current Focus:** Phase 4 - Consumables & Inventory - COMPLETE. Inventory infrastructure and pickup system implemented. Ready for Phase 5 (Investigation System).
+**Current Focus:** Phase 4 - Consumables & Inventory - In Progress. Radial quick-select menu complete. One plan remaining (04-05).
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
@@ -18,16 +18,16 @@
 
 ## Current Position
 
-**Phase:** 4 of 10 (Consumables & Inventory) - COMPLETE
-**Plan:** 3 of 3 complete
-**Status:** Phase 4 complete, ready for Phase 5
+**Phase:** 4 of 10 (Consumables & Inventory) - In Progress
+**Plan:** 4 of 5 complete
+**Status:** Radial menu complete, 04-05 remaining
 
 **Progress:**
 ```
 Phase 1  [###] Core Attributes (GAS Foundation) - COMPLETE
 Phase 2  [###] Sanity & Perception - COMPLETE
 Phase 3  [##] Flashlight & Light System - COMPLETE
-Phase 4  [###] Consumables & Inventory - COMPLETE
+Phase 4  [####.] Consumables & Inventory - 4/5 complete
 Phase 5  [ ] Investigation System
 Phase 6  [ ] Hallucination System
 Phase 7  [ ] AI & Enemies
@@ -35,7 +35,7 @@ Phase 8  [ ] Combat System
 Phase 9  [ ] Narrative & PTSD
 Phase 10 [ ] Environment & Demo Level
 
-Overall: [###########] 11/~30 plans complete (~37%)
+Overall: [############] 12/~30 plans complete (~40%)
 ```
 
 ---
@@ -44,9 +44,9 @@ Overall: [###########] 11/~30 plans complete (~37%)
 
 | Metric | Value |
 |--------|-------|
-| Phases Complete | 4/10 |
-| Plans Executed | 11 |
-| Last Plan Duration | ~5 min |
+| Phases Complete | 3/10 |
+| Plans Executed | 12 |
+| Last Plan Duration | ~11 min |
 | Blockers Encountered | 0 |
 
 ---
@@ -97,6 +97,10 @@ Overall: [###########] 11/~30 plans complete (~37%)
 | InventoryWidget ZOrder 10 | Higher than HorrorUI (0) to ensure inventory layers on top | 2026-01-22 |
 | Collapsed visibility for hidden widgets | ESlateVisibility::Collapsed removes from layout; cleaner than Hidden | 2026-01-22 |
 | FInputModeUIOnly for inventory | Game pauses, cursor shows, widget takes focus | 2026-01-22 |
+| GameAndUI input mode for radial | Radial menu does NOT pause; game continues while visible | 2026-01-22 |
+| RadialMenuWidget ZOrder 15 | Higher than inventory (10) to layer on top if both visible | 2026-01-22 |
+| Auto-hide radial after use | Click to use, not hold-and-release per CONTEXT.md | 2026-01-22 |
+| Right-click for quick slot assignment | NativeOnMouseButtonDown override + delegate pattern | 2026-01-22 |
 
 ### Technical Notes
 
@@ -119,6 +123,8 @@ Overall: [###########] 11/~30 plans complete (~37%)
 - **Inventory system:** InventoryComponent on PlayerState with TMap storage, ItemDataAsset for item definitions, Item.* gameplay tags for categorization
 - **Interaction system:** IInteractableTarget interface, timer-based line trace detection, custom depth highlight, ConsumablePickup actor
 - **Inventory UI:** InventoryWidget with category tabs, ItemSlotWidget for grid display, Tab toggle with game pause
+- **Radial menu:** RadialMenuWidget with 4 quick slots, Q toggle, no game pause, GameAndUI input mode
+- **Quick slot assignment:** Right-click in inventory shows assignment popup (BlueprintImplementableEvent)
 
 ### Patterns Established (Phase 1 + Phase 2 + Phase 3 + Phase 4)
 
@@ -153,6 +159,9 @@ Overall: [###########] 11/~30 plans complete (~37%)
 - **Tab toggle pattern:** ToggleInventory/OpenInventory/CloseInventory triplet for modal UI
 - **Game pause pattern:** SetGamePaused + FInputModeUIOnly + bShowMouseCursor for modal inventory
 - **TileView list item pattern:** UObject* (ItemDataAsset) directly as TileView list item
+- **GameAndUI input mode pattern:** Game continues while cursor active for non-pausing menus
+- **Right-click context menu pattern:** NativeOnMouseButtonDown + delegate broadcast
+- **BlueprintImplementableEvent pattern:** C++ defines interface, Blueprint implements UI
 
 ### Research Flags
 
@@ -167,15 +176,15 @@ Overall: [###########] 11/~30 plans complete (~37%)
 ## Session Continuity
 
 ### Last Session
-- 2026-01-22: Completed 04-03 Inventory UI
-- ItemSlotWidget for individual item display with icon and quantity
-- InventoryWidget with Medical/Tools/Evidence category tabs
-- Tab key toggle with game pause and UI input mode
-- Inventory widget integration with InventoryComponent
+- 2026-01-22: Completed 04-04 Radial Quick-Select Menu
+- RadialMenuWidget with 4-slot quick access (no pause)
+- ToggleRadialMenu input binding in HorrorPlayerController
+- Right-click in inventory triggers quick slot assignment
+- ShowQuickSlotAssignmentUI BlueprintImplementableEvent
 
 ### Next Session
-- Execute Phase 5 (Investigation System)
-- Or configure Blueprint assets for Phase 4 inventory UI
+- Execute 04-05 (remaining Phase 4 plan)
+- Or configure Blueprint assets for Phase 4 UI
 
 ### Pending Items
 - [x] Enable GAS plugin
@@ -220,6 +229,9 @@ Overall: [###########] 11/~30 plans complete (~37%)
 - [x] Create ItemSlotWidget for item display (04-03)
 - [x] Create InventoryWidget with category tabs (04-03)
 - [x] Add inventory toggle to HorrorPlayerController (04-03)
+- [x] Create RadialMenuWidget for quick-select (04-04)
+- [x] Add radial menu toggle to HorrorPlayerController (04-04)
+- [x] Add quick slot assignment support (04-04)
 - [ ] **USER:** Create IA_Interact Input Action in Editor
 - [ ] **USER:** Add IA_Interact to IMC_Horror (bound to E key)
 - [ ] **USER:** Configure BP_HorrorPlayerController InteractAction property
@@ -233,6 +245,11 @@ Overall: [###########] 11/~30 plans complete (~37%)
 - [ ] **USER:** Create IA_ToggleInventory Input Action (bExecuteWhenPaused = true)
 - [ ] **USER:** Add IA_ToggleInventory to IMC_Horror (bound to Tab key)
 - [ ] **USER:** Configure BP_HorrorPlayerController inventory properties
+- [ ] **USER:** Create WBP_RadialMenu widget Blueprint (parent to RadialMenuWidget)
+- [ ] **USER:** Create IA_ToggleRadialMenu Input Action
+- [ ] **USER:** Add IA_ToggleRadialMenu to IMC_Horror (bound to Q key)
+- [ ] **USER:** Configure BP_HorrorPlayerController radial menu properties
+- [ ] **USER:** Implement ShowQuickSlotAssignmentUI in WBP_Inventory
 
 ---
 
@@ -245,4 +262,4 @@ None currently.
 *State initialized: 2026-01-19*
 *Last updated: 2026-01-22*
 *Phase 3 complete: 2026-01-21*
-*Phase 4 complete: 2026-01-22*
+*04-04 complete: 2026-01-22*
