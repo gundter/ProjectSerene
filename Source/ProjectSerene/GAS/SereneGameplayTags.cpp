@@ -37,4 +37,16 @@ namespace SereneGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Recovering, "State.Recovering", "Stamina is recovering after depletion - must reach 20% before sprinting allowed");
 
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_FlashlightOn, "State.FlashlightOn", "Flashlight is currently on - battery drain active");
+
+	// ----------------------------------------
+	// Item Category Tags
+	// ----------------------------------------
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Item_Consumable, "Item.Consumable", "Base category for consumable items");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Item_Consumable_Medical, "Item.Consumable.Medical", "Medical consumables - restore health (bandage, medkit, medication)");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Item_Consumable_Tool, "Item.Consumable.Tool", "Tool consumables - restore resources (battery, energy drink)");
+
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Item_Evidence, "Item.Evidence", "Evidence items - collected during investigation");
 }

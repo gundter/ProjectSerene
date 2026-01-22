@@ -74,4 +74,21 @@ namespace SereneGameplayTags
 
 	/** Flashlight is currently on (draining battery) */
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_FlashlightOn);
+
+	// ----------------------------------------
+	// Item Category Tags
+	// Used for categorizing and filtering items in inventory
+	// ----------------------------------------
+
+	/** Base consumable category - items that are used/consumed */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Item_Consumable);
+
+	/** Medical consumables - restore health (bandage, medkit, medication) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Item_Consumable_Medical);
+
+	/** Tool consumables - restore resources (battery, energy drink) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Item_Consumable_Tool);
+
+	/** Evidence items - collected during investigation (Phase 5) */
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Item_Evidence);
 }
