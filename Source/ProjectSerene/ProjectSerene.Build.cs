@@ -32,6 +32,7 @@ public class ProjectSerene : ModuleRules
 			"ProjectSerene/Inventory",
 			"ProjectSerene/Player",
 			"ProjectSerene/Variant_Horror",
+			"ProjectSerene/Variant_Horror/Pickups",
 			"ProjectSerene/Variant_Horror/UI",
 			"ProjectSerene/Variant_Shooter",
 			"ProjectSerene/Variant_Shooter/AI",
