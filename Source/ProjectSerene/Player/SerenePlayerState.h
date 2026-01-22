@@ -10,6 +10,7 @@
 class USereneAbilitySystemComponent;
 class USereneAttributeSet;
 class UGameplayEffect;
+class UInventoryComponent;
 
 /**
  * ASerenePlayerState
@@ -46,6 +47,14 @@ public:
 	USereneAttributeSet* GetAttributeSet() const { return AttributeSet; }
 
 	// ----------------------------------------
+	// Inventory Access
+	// ----------------------------------------
+
+	/** Returns the InventoryComponent owned by this PlayerState */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
+	// ----------------------------------------
 	// Initialization
 	// ----------------------------------------
 
@@ -69,6 +78,14 @@ protected:
 	/** The Attribute Set - contains Health, Stamina, Sanity, Battery attributes */
 	UPROPERTY()
 	TObjectPtr<USereneAttributeSet> AttributeSet;
+
+	// ----------------------------------------
+	// Inventory Component
+	// ----------------------------------------
+
+	/** Inventory Component - manages player's collected items */
+	UPROPERTY()
+	TObjectPtr<UInventoryComponent> InventoryComponent;
 
 	// ----------------------------------------
 	// Configuration

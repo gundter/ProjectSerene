@@ -3,6 +3,7 @@
 #include "Player/SerenePlayerState.h"
 #include "GAS/SereneAbilitySystemComponent.h"
 #include "GAS/SereneAttributeSet.h"
+#include "Inventory/InventoryComponent.h"
 #include "GameplayEffect.h"
 #include "ProjectSerene.h"
 
@@ -14,6 +15,10 @@ ASerenePlayerState::ASerenePlayerState()
 	// Create the AttributeSet as a subobject
 	// Must be created on the same actor that owns the ASC
 	AttributeSet = CreateDefaultSubobject<USereneAttributeSet>(TEXT("AttributeSet"));
+
+	// Create the InventoryComponent as a subobject
+	// Follows the ASC ownership pattern - persists across respawns
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 }
 
 UAbilitySystemComponent* ASerenePlayerState::GetAbilitySystemComponent() const
