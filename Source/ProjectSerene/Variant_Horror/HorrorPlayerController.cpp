@@ -21,6 +21,11 @@
 
 // Interaction system includes
 #include "Inventory/InteractableInterface.h"
+#include "Inventory/InventoryComponent.h"
+
+// Inventory UI includes
+#include "UI/InventoryWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 AHorrorPlayerController::AHorrorPlayerController()
 {
@@ -80,6 +85,23 @@ void AHorrorPlayerController::OnPossess(APawn* aPawn)
 
 			// New: setup GAS attribute listeners for all attributes
 			SetupAttributeListeners();
+
+			// Create inventory widget (hidden by default)
+			if (InventoryWidgetClass && !InventoryWidget)
+			{
+				InventoryWidget = CreateWidget<UInventoryWidget>(this, InventoryWidgetClass);
+				if (InventoryWidget)
+				{
+					InventoryWidget->AddToViewport(10); // Higher ZOrder than HorrorUI
+					InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+					// Initialize with inventory component from PlayerState
+					if (ASerenePlayerState* PS = GetPlayerState<ASerenePlayerState>())
+					{
+						InventoryWidget->SetInventoryComponent(PS->GetInventoryComponent());
+					}
+				}
+			}
 		}
 	}
 }
@@ -109,12 +131,16 @@ void AHorrorPlayerController::SetupInputComponent()
 			}
 		}
 
-		// Bind interact action
+		// Bind input actions
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 		{
 			if (InteractAction)
 			{
 				EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AHorrorPlayerController::OnInteractPressed);
+			}
+			if (ToggleInventoryAction)
+			{
+				EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &AHorrorPlayerController::ToggleInventory);
 			}
 		}
 	}
@@ -338,4 +364,53 @@ void AHorrorPlayerController::OnInteractPressed()
 			IInteractableTarget::Execute_OnInteract(CurrentInteractable.Get(), ControlledPawn);
 		}
 	}
+}
+
+// ----------------------------------------
+// Inventory UI
+// ----------------------------------------
+
+void AHorrorPlayerController::ToggleInventory()
+{
+	if (bInventoryOpen)
+	{
+		CloseInventory();
+	}
+	else
+	{
+		OpenInventory();
+	}
+}
+
+void AHorrorPlayerController::OpenInventory()
+{
+	if (!InventoryWidget) return;
+
+	bInventoryOpen = true;
+	InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+	InventoryWidget->RefreshInventory();
+
+	// Pause game per CONTEXT.md
+	UGameplayStatics::SetGamePaused(GetWorld(), true);
+
+	// Switch to UI input mode
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+}
+
+void AHorrorPlayerController::CloseInventory()
+{
+	if (!InventoryWidget) return;
+
+	bInventoryOpen = false;
+	InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	// Unpause game
+	UGameplayStatics::SetGamePaused(GetWorld(), false);
+
+	// Return to game input mode
+	SetInputMode(FInputModeGameOnly());
+	bShowMouseCursor = false;
 }

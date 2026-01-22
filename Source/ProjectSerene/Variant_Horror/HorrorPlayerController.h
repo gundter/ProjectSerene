@@ -9,6 +9,8 @@
 class UInputMappingContext;
 class UInputAction;
 class UHorrorUI;
+class UInventoryWidget;
+class URadialMenuWidget;
 class ASerenePlayerState;
 struct FOnAttributeChangeData;
 
@@ -123,6 +125,59 @@ protected:
 
 	/** Handle interact input */
 	void OnInteractPressed();
+
+	// ----------------------------------------
+	// Inventory UI
+	// ----------------------------------------
+
+	/** Input action for inventory toggle (Tab key) */
+	UPROPERTY(EditDefaultsOnly, Category = "Horror|Input")
+	TObjectPtr<UInputAction> ToggleInventoryAction;
+
+	/** Inventory widget class to spawn */
+	UPROPERTY(EditAnywhere, Category = "Horror|UI")
+	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
+
+	/** Pointer to inventory widget instance */
+	UPROPERTY()
+	TObjectPtr<UInventoryWidget> InventoryWidget;
+
+	/** Whether inventory is currently open */
+	bool bInventoryOpen = false;
+
+	/** Toggle inventory visibility */
+	void ToggleInventory();
+
+	/** Open inventory (show widget, pause game, UI input mode) */
+	void OpenInventory();
+
+	/** Close inventory (hide widget, unpause game, game input mode) */
+	void CloseInventory();
+
+	// ----------------------------------------
+	// Radial Menu UI
+	// ----------------------------------------
+
+	/** Input action for radial menu toggle (Q key) */
+	UPROPERTY(EditDefaultsOnly, Category = "Horror|Input")
+	TObjectPtr<UInputAction> ToggleRadialMenuAction;
+
+	/** Radial menu widget class to spawn */
+	UPROPERTY(EditAnywhere, Category = "Horror|UI")
+	TSubclassOf<URadialMenuWidget> RadialMenuWidgetClass;
+
+	/** Pointer to radial menu widget instance */
+	UPROPERTY()
+	TObjectPtr<URadialMenuWidget> RadialMenuWidget;
+
+	/** Toggle radial menu visibility */
+	void ToggleRadialMenu();
+
+	/** Open radial menu (show widget, show cursor, but NO pause) */
+	void OpenRadialMenu();
+
+	/** Close radial menu (hide widget, hide cursor) */
+	void CloseRadialMenu();
 
 private:
 	/** Tracks whether sanity warning is currently active (for edge detection) */
