@@ -106,6 +106,15 @@ Plans:
 
 **Dependencies:** Phase 1 (All attributes), Phase 3 (Battery for batteries)
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Core inventory infrastructure: ItemDataAsset, InventoryComponent, Item gameplay tags
+- [ ] 04-02-PLAN.md — Interaction system: IInteractableTarget interface, ConsumablePickup actor, line trace detection
+- [ ] 04-03-PLAN.md — Inventory UI: Tabbed panel (Medical/Tools/Evidence), ItemSlotWidget, Tab toggle with pause
+- [ ] 04-04-PLAN.md — Radial quick-select menu: 4 slots, non-pausing, quick slot assignment
+- [ ] 04-05-PLAN.md — Consumable items: Gameplay Effects and Item Data Assets for all consumables
+
 **Requirements:**
 - CONS-01: Inventory system for collecting and using items
 - CONS-02: Batteries restore flashlight battery attribute
@@ -281,7 +290,7 @@ Plans:
 | 1 | Core Attributes (GAS Foundation) | 6 | Complete |
 | 2 | Sanity & Perception | 5 | Complete |
 | 3 | Flashlight & Light System | 5 | Complete |
-| 4 | Consumables & Inventory | 8 | Pending |
+| 4 | Consumables & Inventory | 8 | Planned |
 | 5 | Investigation System | 8 | Pending |
 | 6 | Hallucination System | 7 | Pending |
 | 7 | AI & Enemies | 8 | Pending |
@@ -325,3 +334,4 @@ Phase 1 (GAS Foundation)
 *Phase 2 planned: 2026-01-20*
 *Phase 3 planned: 2026-01-21*
 *Phase 3 complete: 2026-01-21*
+*Phase 4 planned: 2026-01-21*
