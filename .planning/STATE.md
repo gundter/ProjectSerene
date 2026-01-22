@@ -12,6 +12,8 @@
 
 **Scope:** Demo/vertical slice - one complete investigation demonstrating core mechanics and tone.
 
+**Reviewer Persona:** Senior Unreal Engine Developer (10+ years experience, shipped multiple AAA titles). Reviews focus on: performance optimization, GAS best practices, memory safety, UE coding standards, Blueprint/C++ boundary design, scalability, and maintainability.
+
 ---
 
 ## Current Position
