@@ -25,23 +25,33 @@ Create in `Content/Variant_Horror/Blueprints/Gameplay/GameplayEffects/`:
 
 See `ConsumableEffects_Setup.md` for full details. Summary:
 
-| Effect | Duration | Modifier | Attribute | Value |
-|--------|----------|----------|-----------|-------|
-| GE_RestoreBattery | Instant | Override | Battery | 100 |
-| GE_RestoreHealth_Small | Instant | Add | Health | 30 |
-| GE_RestoreHealth_Large | Instant | Add | Health | 75 |
-| GE_RestoreStamina | Instant | Add | Stamina | 50 |
-| GE_RestoreSanity_Mild | Instant | Add | Sanity | 30 |
-| GE_RestoreSanity_Full | Instant | Override | Sanity | 100 |
+| Effect | Duration | Modifier | Attribute | Magnitude |
+|--------|----------|----------|-----------|-----------|
+| GE_RestoreBattery | Instant | Override | Battery | Attribute-Based (MaxBattery) |
+| GE_RestoreHealth_Small | Instant | Add | Health | Scalable Float: 30 |
+| GE_RestoreHealth_Large | Instant | Add | Health | Scalable Float: 75 |
+| GE_RestoreStamina | Instant | Add | Stamina | Scalable Float: 50 |
+| GE_RestoreSanity_Mild | Instant | Add | Sanity | Scalable Float: 30 |
+| GE_RestoreSanity_Full | Instant | Override | Sanity | Attribute-Based (MaxSanity) |
 
-**How to create each:**
+**How to create partial restore effects (Add + Scalable Float):**
 1. Right-click > Blueprint Class > GameplayEffect
 2. Duration Policy = Instant
 3. Modifiers > Add element
 4. Attribute = SereneAttributeSet.{AttributeName}
-5. Modifier Op = Add or Override
+5. Modifier Op = Add
 6. Modifier Magnitude > Magnitude Calculation Type = Scalable Float
 7. Scalable Float Magnitude = {Value}
+
+**How to create full restore effects (Override + Attribute-Based):**
+1. Right-click > Blueprint Class > GameplayEffect
+2. Duration Policy = Instant
+3. Modifiers > Add element
+4. Attribute = SereneAttributeSet.{AttributeName}
+5. Modifier Op = Override
+6. Modifier Magnitude > Magnitude Calculation Type = Attribute Based
+7. Backing Attribute > Attribute to Capture = SereneAttributeSet.Max{AttributeName}
+8. Attribute Source = Target
 
 ---
 
